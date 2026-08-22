@@ -1,0 +1,30 @@
+{
+  "updated": "2026-08-22",
+  "note": "Performance-first column. Change these in the game.",
+  "groups": [
+    {
+      "name": "Display",
+      "rows": [
+        { "name": "Display mode", "perf": "Fullscreen", "notes": "Exclusive fullscreen if the game offers it." },
+        { "name": "Resolution", "perf": "Native", "notes": "Use the monitor's native timing." },
+        { "name": "Refresh rate", "perf": "Max the display allows", "notes": "" },
+        { "name": "In-match frame cap", "perf": "Display Hz or uncapped", "notes": "Cap if you want heat down." },
+        { "name": "VSync", "perf": "Off", "notes": "" },
+        { "name": "NVIDIA Fast Sync", "perf": "Off", "notes": "" }
+      ]
+    },
+    {
+      "name": "Quality",
+      "rows": [
+        { "name": "Quality preset", "perf": "Custom / Low", "notes": "Start low, raise texture if VRAM allows." },
+        { "name": "Anti-aliasing", "perf": "TAA low or off", "notes": "" },
+        { "name": "Shadows", "perf": "Low", "notes": "" },
+        { "name": "Global illumination", "perf": "Low or off", "notes": "" },
+        { "name": "Reflections", "perf": "Low", "notes": "" },
+        { "name": "Effects / particles", "perf": "Low", "notes": "" },
+        { "name": "View distance", "perf": "Medium", "notes": "Fight visibility vs GPU time." },
+        { "name": "Render scale", "perf": "100% or DLSS/FSR/XeSS", "notes": "Vendor upscalers beat a raw drop." }
+      ]
+    }
+  ]
+}

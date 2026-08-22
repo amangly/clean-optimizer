@@ -1,0 +1,109 @@
+export const copy = {
+  appName: "Clean Optimizer",
+  tagline: "Windows settings for Delta Force frame rate. Each write is backed up first.",
+  unofficial: "Unofficial. Does not edit game files, inject into the process, or talk to anti-cheat.",
+  disclaimerTitle: "Read this before you change Windows",
+  disclaimerBody: [
+    "This program writes registry values, power plans, services, and boot options. It saves the previous value before each write. Restore can still fail if another program changed the same setting, or if Windows blocks the write.",
+    "It does not edit the Delta Force install.",
+    "Results depend on CPU, GPU, RAM, and driver. Some items cost battery life, search speed, or mouse feel. GPU name spoof has machines that lost frames.",
+    "There is no code-signing certificate. SmartScreen may warn. Antivirus may flag the registry and service edits.",
+    "If you do not accept that, close the app.",
+  ],
+  accept: "I read this. Continue.",
+  quit: "Close",
+  scrollHint: "Scroll to the bottom before you continue.",
+  scrolled: "You reached the end. Continue is open.",
+  spoofAs: "Spoof as",
+  restorePickTitle: "Pick items to restore",
+  restoreSelectiveNote:
+    "Only eight items restore one at a time: Game Mode, Xbox recording, foreground weight, network throttle, MMCSS reserve, MMCSS Games, fullscreen optimizations, GPU preference. The rest need Restore all.",
+  themeDark: "Dark",
+  themeLight: "Light",
+  rereadDisclaimer: "Disclaimer",
+  conflict: "Changed after apply",
+  adminNeeded: "This session is not elevated. System items will fail until you relaunch as administrator.",
+  relaunchAdmin: "Relaunch as administrator",
+  detectFailed: "Detect failed",
+  gamePath: "Game exe",
+  browse: "Browse",
+  find: "Find",
+  preset: "Preset",
+  savePreset: "Save current",
+  deletePreset: "Delete preset",
+  apply: "Apply selected",
+  restore: "Restore",
+  restoreAll: "Restore all",
+  restoreSelected: "Restore selected",
+  selectDefaults: "Recommended",
+  selectNone: "None",
+  selectPreset: "Load preset",
+  riskyTitle: "GPU name spoof",
+  riskyBody:
+    "This rewrites the GPU name Windows reports. Some machines lose frames. A driver install writes the real name back. Anti-cheat treatment of a lying DeviceDesc is unpublished.",
+  riskyConfirm: "Apply including spoof",
+  riskyCancel: "Back",
+  reboot: "Needs a reboot",
+  already: "At target",
+  check: "Check only",
+  cache: "No backup",
+  tabs: {
+    optimize: "Optimize",
+    tune: "Auto-tune",
+    fix: "Frame drop",
+    reference: "In-game settings",
+    log: "Log",
+  },
+  tuneLead:
+    "Three baselines, then three low-risk groups on the same map, quality, resolution, and route. The app keeps a group only if the local rules say it helped. GPU spoof never enters this test.",
+  tuneScene: "Scene id",
+  tuneStart: "Start",
+  tuneConfirm: "Record this round",
+  tuneCancel: "Cancel test",
+  fixLead: "These actions target hitching after a game or driver update. Cache delete has no restore.",
+  clearCache: "Clear shader caches",
+  runChecks: "Run hardware checks",
+  refLead:
+    "Reference only. Change these in the game under Settings, Video. This app cannot write them.",
+  logEmpty: "No run log yet.",
+  telemetry: "Send anonymous item ids and hardware sketch",
+  updateNone: "No update from this build.",
+} as const;
+
+export const banned = [
+  "delve",
+  "foster",
+  "leverage",
+  "utilize",
+  "facilitate",
+  "empower",
+  "streamline",
+  "robust",
+  "cutting-edge",
+  "paradigm shift",
+  "game changer",
+  "tapestry",
+  "realm",
+  "beacon",
+  "multifaceted",
+  "meticulous",
+  "intricate",
+  "paramount",
+  "transformative",
+  "supercharge",
+  "harness",
+  "ever-evolving",
+] as const;
+
+export function flattenCopy(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (Array.isArray(value)) {
+    return value.map(flattenCopy).join("\n");
+  }
+  if (value && typeof value === "object") {
+    return Object.values(value).map(flattenCopy).join("\n");
+  }
+  return "";
+}

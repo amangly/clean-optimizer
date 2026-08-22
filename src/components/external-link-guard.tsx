@@ -1,0 +1,56 @@
+import { useEffect } from "react";
+
+const EXTERNAL = new Set(["http:", "https:", "mailto:", "tel:"]);
+
+function isModifiedClick(event: MouseEvent) {
+  return (
+    event.defaultPrevented ||
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  );
+}
+
+function shouldOpenExternally(anchor: HTMLAnchorElement) {
+  const href = anchor.getAttribute("href");
+  if (!href || href.startsWith("#") || anchor.hasAttribute("download")) {
+    return false;
+  }
+  try {
+    const url = new URL(anchor.href, window.location.href);
+    if (!EXTERNAL.has(url.protocol)) {
+      return false;
+    }
+    if (url.protocol === "mailto:" || url.protocol === "tel:") {
+      return true;
+    }
+    return url.origin !== window.location.origin;
+  } catch {
+    return false;
+  }
+}
+
+export function ExternalLinkGuard() {
+  useEffect(() => {
+    function handleClick(event: MouseEvent) {
+      if (isModifiedClick(event)) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const anchor = target.closest("a[href]");
+      if (!(anchor instanceof HTMLAnchorElement) || !shouldOpenExternally(anchor)) {
+        return;
+      }
+      event.preventDefault();
+      void import("@tauri-apps/plugin-opener").then(({ openUrl }) => openUrl(anchor.href));
+    }
+    document.addEventListener("click", handleClick, true);
+    return () => document.removeEventListener("click", handleClick, true);
+  }, []);
+  return null;
+}
