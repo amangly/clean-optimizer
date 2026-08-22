@@ -13,9 +13,9 @@
   <img src="src/assets/screenshot.png" alt="Clean Optimizer" />
 </p>
 
-Windows settings for the Chinese Delta Force client (三角洲行动). Writes are backed up. The game install is not touched.
+Windows settings. Writes are backed up. A Delta Force (三角洲行动) exe path is optional.
 
-Looks for `DeltaForceClient-Win64-Shipping.exe`, `DeltaForceClient.exe`, or `DeltaForce.exe`.
+Find looks for `DeltaForceClient-Win64-Shipping.exe`, `DeltaForceClient.exe`, or `DeltaForce.exe`.
 
 ```
 bun install

@@ -51,9 +51,10 @@ fn admin() -> bool {
 #[tauri::command]
 pub fn detect(game_path: Option<String>) -> Result<DetectReport> {
     let hw = hardware::detect()?;
-    let found = match game_path {
-        Some(p) => Some(p),
+    let found = match game_path.as_deref().map(str::trim) {
         None => game::find_game()?,
+        Some("") => None,
+        Some(p) => Some(p.to_string()),
     };
     let catalog = items::catalog(&hw, found.as_deref(), None);
     let store = store();

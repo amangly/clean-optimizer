@@ -1,11 +1,11 @@
 export const copy = {
   appName: "Clean Optimizer",
-  tagline: "Windows settings for Delta Force. Writes are backed up.",
+  tagline: "Windows settings. Writes are backed up.",
   unofficial: "Does not edit game files or inject.",
   disclaimerTitle: "Read this before you change Windows",
   disclaimerBody: [
     "This program writes registry values, power plans, services, and boot options. It saves the previous value before each write. Restore can still fail if another program changed the same setting, or if Windows blocks the write.",
-    "It does not edit the Delta Force install.",
+    "It does not edit game installs. A Delta Force exe path is optional and only used for a few items.",
     "Results depend on CPU, GPU, RAM, and driver. Some items cost battery life, search speed, or mouse feel. GPU name spoof has machines that lost frames.",
     "There is no code-signing certificate. SmartScreen may warn. Antivirus may flag the registry and service edits.",
     "If you do not accept that, close the app.",
@@ -27,7 +27,7 @@ export const copy = {
   loading: "Loading",
   retry: "Retry",
   detectFailed: "Detect failed",
-  gamePath: "Game exe",
+  gamePath: "Delta Force exe (optional)",
   browse: "Browse",
   find: "Find",
   preset: "Preset",

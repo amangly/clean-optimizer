@@ -293,7 +293,7 @@ pub fn catalog(hw: &HardwareInfo, game_path: Option<&str>, spoof: Option<&str>) 
     items.push(OptItem::base(
         "powerplan-lock",
         "Lock the power plan",
-        "Creates a scheduled task that writes the current plan back every minute. Delta Force has been seen changing the plan at launch. Restore deletes the task.",
+        "Creates a scheduled task that writes the current plan back every minute. Some launches change the plan. Restore deletes the task.",
         ItemKind::Sched,
         true,
         false,

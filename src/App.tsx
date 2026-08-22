@@ -40,6 +40,7 @@ export function App() {
   const [metrics, setMetrics] = useState<LiveMetrics | null>(null);
   const [tab, setTab] = useState<TabId>("optimize");
   const [gamePath, setGamePath] = useState("");
+  const [pathReady, setPathReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [lastApply, setLastApply] = useState<ItemResult[] | null>(null);
@@ -96,9 +97,11 @@ export function App() {
   async function refresh(path?: string) {
     setError("");
     try {
-      const next = await api.detect(path ?? (gamePath || null));
+      const sent = path !== undefined ? path : pathReady ? gamePath : null;
+      const next = await api.detect(sent);
       setReport(next);
-      setGamePath((next.gamePath ?? path) ?? "");
+      setGamePath(next.gamePath ?? (sent ?? ""));
+      setPathReady(true);
       setPresets(await api.listPresets());
       setRestoreItems(await api.listRestore());
     } catch (e) {
@@ -269,7 +272,7 @@ export function App() {
             lastApply={lastApply}
             restoreItems={restoreItems}
             onGamePath={setGamePath}
-            onFind={() => void api.findGame().then((p) => p && void refresh(p))}
+            onFind={() => void api.findGame().then((p) => void refresh(p ?? ""))}
             onBrowse={() => void api.pickGame().then((p) => p && void refresh(p))}
             onApply={onApply}
             onRestore={(items) => void onRestore(items)}

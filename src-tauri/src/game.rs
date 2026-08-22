@@ -21,8 +21,8 @@ pub fn find_game() -> Result<Option<String>> {
 
 pub fn pick_game() -> Result<Option<String>> {
     let picked = rfd::FileDialog::new()
-        .add_filter("Delta Force", &["exe"])
-        .set_title("Select DeltaForceClient-Win64-Shipping.exe")
+        .add_filter("Executable", &["exe"])
+        .set_title("Delta Force exe (optional)")
         .pick_file();
     match picked {
         Some(path) => {

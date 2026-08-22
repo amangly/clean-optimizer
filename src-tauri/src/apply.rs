@@ -58,8 +58,8 @@ pub fn apply(
             results.push(fail(&item.id, &item.name, Error::AdminRequired(item.id.clone()).to_string()));
             continue;
         }
-        if item.requires_game && req.game_path.is_none() {
-            results.push(skip(&item.id, &item.name, "No game path.".into(), false));
+        if item.requires_game && req.game_path.as_deref().map(str::trim).unwrap_or("").is_empty() {
+            results.push(skip(&item.id, &item.name, "No Delta Force path.".into(), false));
             continue;
         }
         if item.requires_game {
