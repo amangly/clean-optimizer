@@ -14,7 +14,17 @@ import { LogPage } from "@/pages/LogPage";
 import { OptimizePage } from "@/pages/OptimizePage";
 import { ReferencePage } from "@/pages/ReferencePage";
 import { TunePage } from "@/pages/TunePage";
-import type { DetectReport, ItemResult, LiveMetrics, Prefs, Preset, RestoreItem, TabId, UpdateInfo } from "@/lib/types";
+import type {
+  DetectReport,
+  ItemResult,
+  LiveMetrics,
+  Prefs,
+  Preset,
+  RebootState,
+  RestoreItem,
+  TabId,
+  UpdateInfo,
+} from "@/lib/types";
 
 const HardwareBar = lazy(async () => {
   const mod = await import("@/components/HardwareBar");
@@ -38,6 +48,8 @@ export function App() {
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
   const [updating, setUpdating] = useState(false);
   const [version, setVersion] = useState("");
+  const [reboot, setReboot] = useState<RebootState | null>(null);
+  const [rebootAsk, setRebootAsk] = useState(false);
 
   useEffect(() => {
     void api
@@ -57,7 +69,10 @@ export function App() {
     if (!prefs?.disclaimerAccepted) {
       return;
     }
-    void refresh();
+    void (async () => {
+      await refresh();
+      await loadReboot();
+    })();
     void api
       .checkUpdate()
       .then((info) => {
@@ -91,6 +106,15 @@ export function App() {
     }
   }
 
+  async function loadReboot() {
+    try {
+      const next = await api.rebootState();
+      setReboot(next);
+    } catch {
+      return;
+    }
+  }
+
   async function persist(next: Prefs) {
     setPrefs(await api.setPrefs(next));
   }
@@ -114,6 +138,10 @@ export function App() {
       });
       setLastApply(reportApply.results);
       await refresh(gamePath);
+      await loadReboot();
+      if (reportApply.results.some((row) => row.reboot)) {
+        setRebootAsk(true);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -204,6 +232,14 @@ export function App() {
       {updating ? (
         <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{copy.updateInstalling}</Alert>
       ) : null}
+      {reboot?.needsReboot && !rebootAsk ? (
+        <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">
+          {copy.rebootPending}{" "}
+          <Button className="ml-1" onClick={() => setRebootAsk(true)}>
+            {copy.rebootNow}
+          </Button>
+        </Alert>
+      ) : null}
       {error ? <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{error}</Alert> : null}
       <main className="min-h-0 flex-1 overflow-hidden px-3 py-2">
         {tab === "optimize" ? (
@@ -230,6 +266,76 @@ export function App() {
         {tab === "reference" ? <ReferencePage /> : null}
         {tab === "log" ? <LogPage /> : null}
       </main>
+      <Dialog open={rebootAsk} onOpenChange={setRebootAsk}>
+        <DialogContent>
+          <DialogTitle>{copy.rebootTitle}</DialogTitle>
+          <DialogDescription>{copy.rebootBody}</DialogDescription>
+          <div className="mt-2 grid max-h-40 grid-cols-1 gap-1 overflow-y-auto text-xs sm:grid-cols-2">
+            {(reboot?.items.length ? reboot.items : lastApply?.filter((row) => row.reboot) ?? []).map(
+              (row) => (
+                <p key={row.id}>{row.name}</p>
+              ),
+            )}
+          </div>
+          <div className="mt-3 flex gap-2">
+            <Button
+              onClick={() => {
+                void api.requestReboot().catch((e: Error) => setError(e.message));
+              }}
+            >
+              {copy.rebootNow}
+            </Button>
+            <Button variant="outline" onClick={() => setRebootAsk(false)}>
+              {copy.rebootLater}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={Boolean(reboot?.review?.length)}
+        onOpenChange={(open) => {
+          if (!open) {
+            void api
+              .ackRebootReview()
+              .then(async () => {
+                setReboot(null);
+                await refresh(gamePath);
+              })
+              .catch((e: Error) => setError(e.message));
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogTitle>{copy.rebootReviewTitle}</DialogTitle>
+          <DialogDescription>{copy.rebootReviewLead}</DialogDescription>
+          <div className="mt-2 grid max-h-48 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+            {reboot?.review?.map((row) => (
+              <p key={row.id} className="text-xs">
+                <span className="font-medium">{row.name}</span>
+                <span className="mt-0.5 block text-muted-foreground">
+                  {row.ok ? copy.rebootReviewOk : copy.rebootReviewFail}
+                  {row.detail ? ` · ${row.detail}` : ""}
+                </span>
+              </p>
+            ))}
+          </div>
+          <div className="mt-3">
+            <Button
+              onClick={() => {
+                void api
+                  .ackRebootReview()
+                  .then(async () => {
+                    setReboot(null);
+                    await refresh(gamePath);
+                  })
+                  .catch((e: Error) => setError(e.message));
+              }}
+            >
+              {copy.rebootAck}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent>
           <div className="grid gap-4 sm:grid-cols-2 sm:items-start">

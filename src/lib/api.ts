@@ -10,6 +10,7 @@ import type {
   Prefs,
   Preset,
   RestoreItem,
+  RebootState,
   RestoreReport,
   UpdateInfo,
 } from "./types";
@@ -122,6 +123,18 @@ export function relaunchElevated() {
 
 export function isElevated() {
   return invoke<boolean>("is_elevated");
+}
+
+export function rebootState() {
+  return invoke<RebootState>("reboot_state");
+}
+
+export function requestReboot() {
+  return invoke<void>("request_reboot");
+}
+
+export function ackRebootReview() {
+  return invoke<void>("ack_reboot_review");
 }
 
 export async function closeApp() {

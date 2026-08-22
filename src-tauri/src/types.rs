@@ -202,3 +202,27 @@ impl Default for Prefs {
         }
     }
 }
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct PendingRebootItem {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RebootReviewItem {
+    pub id: String,
+    pub name: String,
+    pub ok: bool,
+    pub detail: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RebootState {
+    pub needs_reboot: bool,
+    pub items: Vec<PendingRebootItem>,
+    pub review: Option<Vec<RebootReviewItem>>,
+}

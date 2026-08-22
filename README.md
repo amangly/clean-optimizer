@@ -9,13 +9,13 @@
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
 </p>
 
-Windows app. Writes registry, power plan, and service settings for the Chinese Delta Force client (三角洲行动). Each write is backed up. Restore puts the old value back. The game install is left alone.
+Windows settings for the Chinese Delta Force client (三角洲行动). Writes are backed up. The game install is not touched.
 
-Looks for `DeltaForceClient-Win64-Shipping.exe`, `DeltaForceClient.exe`, or `DeltaForce.exe`. Other clients are not supported yet. System items need administrator.
+Looks for `DeltaForceClient-Win64-Shipping.exe`, `DeltaForceClient.exe`, or `DeltaForce.exe`.
 
 ```
 bun install
 bunx tauri build
 ```
 
-Installer: `src-tauri\target\release\bundle\nsis\`. The release exe has no console window.
+Installer: `src-tauri\target\release\bundle\nsis\`

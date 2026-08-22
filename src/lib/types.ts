@@ -156,4 +156,22 @@ export type UpdateInfo = {
   reached: boolean;
 };
 
+export type PendingRebootItem = {
+  id: string;
+  name: string;
+};
+
+export type RebootReviewItem = {
+  id: string;
+  name: string;
+  ok: boolean;
+  detail: string;
+};
+
+export type RebootState = {
+  needsReboot: boolean;
+  items: PendingRebootItem[];
+  review: RebootReviewItem[] | null;
+};
+
 export type TabId = "optimize" | "tune" | "fix" | "reference" | "log";

@@ -14,8 +14,10 @@ use crate::presets;
 use crate::restore;
 use crate::store::Store;
 use crate::tuning::{self, Candidate, ExperimentState};
+use crate::reboot;
 use crate::types::{
-    ApplyReport, DetectReport, LiveMetrics, Prefs, Preset, RestoreItem, RestoreReport,
+    ApplyReport, DetectReport, LiveMetrics, PendingRebootItem, Prefs, Preset, RebootState,
+    RestoreItem, RestoreReport,
 };
 use crate::update::{self, UpdateInfo};
 use serde::Deserialize;
@@ -129,6 +131,16 @@ pub fn apply_items(args: ApplyArgs) -> Result<ApplyReport> {
             report.succeeded, report.failed, report.skipped, report.attention
         ),
     )?;
+    let pending: Vec<PendingRebootItem> = report
+        .results
+        .iter()
+        .filter(|r| r.reboot)
+        .map(|r| PendingRebootItem {
+            id: r.id.clone(),
+            name: r.name.clone(),
+        })
+        .collect();
+    reboot::add_pending(&paths.user, &pending)?;
     Ok(report)
 }
 
@@ -335,4 +347,22 @@ pub fn relaunch_elevated() -> Result<()> {
 #[tauri::command]
 pub fn is_elevated() -> bool {
     admin()
+}
+
+#[tauri::command]
+pub fn reboot_state() -> Result<RebootState> {
+    let paths = paths()?;
+    let hw = hardware::detect()?;
+    let found = game::find_game()?;
+    reboot::state(&paths.user, store().as_ref(), &hw, found.as_deref())
+}
+
+#[tauri::command]
+pub fn request_reboot() -> Result<()> {
+    reboot::request()
+}
+
+#[tauri::command]
+pub fn ack_reboot_review() -> Result<()> {
+    reboot::ack(&paths()?.user)
 }

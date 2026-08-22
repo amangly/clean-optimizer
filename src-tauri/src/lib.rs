@@ -12,6 +12,7 @@ mod metrics;
 mod paths;
 mod prefs;
 mod presets;
+mod reboot;
 mod restore;
 mod store;
 mod tuning;
@@ -98,7 +99,10 @@ pub fn run() {
             download_update,
             diagnose,
             relaunch_elevated,
-            is_elevated
+            is_elevated,
+            reboot_state,
+            request_reboot,
+            ack_reboot_review
         ])
         .run(tauri::generate_context!())
         .expect("error while running Clean Optimizer");

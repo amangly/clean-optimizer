@@ -80,6 +80,7 @@ export function OptimizePage({
   const wrote = lastApply?.filter((r) => r.ok && r.changed).length ?? 0;
   const failed = lastApply?.filter((r) => !r.ok).length ?? 0;
   const skipped = lastApply?.filter((r) => r.skipped).length ?? 0;
+  const rebootN = lastApply?.filter((r) => r.reboot).length ?? 0;
 
   function toggle(id: string, next: boolean) {
     setSelected((cur) => {
@@ -214,6 +215,7 @@ export function OptimizePage({
             {wrote} {copy.wrote}
             {failed ? ` · ${failed} ${copy.failed}` : ""}
             {skipped ? ` · ${skipped} ${copy.skipped}` : ""}
+            {rebootN ? ` · ${rebootN} ${copy.reboot}` : ""}
           </p>
         ) : null}
 
