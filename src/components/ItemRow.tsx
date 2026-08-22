@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { TextLinks } from "@/components/text-links";
@@ -11,27 +12,35 @@ type Props = {
 };
 
 export function ItemRow({ item, checked, onToggle }: Props) {
+  const [open, setOpen] = useState(false);
   const disabled = !item.applicable && item.kind !== "check";
+  const status = item.tier === "risky" ? "Risky" : statusLabel(item.optimized, item.kind);
   return (
-    <label className="flex items-start gap-3 rounded-lg border px-3 py-2.5">
-      <Checkbox
-        className="mt-0.5"
-        checked={checked}
-        disabled={disabled}
-        onCheckedChange={(value) => onToggle(item.id, value === true)}
-      />
-      <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-medium">{item.name}</h3>
-          <Badge variant={item.tier === "risky" ? "warning" : item.optimized ? "default" : "outline"}>
-            {item.tier === "risky" ? "Risky" : statusLabel(item.optimized, item.kind)}
-            {item.reboot ? " · reboot" : ""}
-          </Badge>
-          {item.attention ? <Badge variant="warning">Check</Badge> : null}
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">{item.note}</p>
-        {item.detail ? <TextLinks className="mt-1 block text-xs text-muted-foreground" text={item.detail} /> : null}
+    <div className="border-b last:border-0">
+      <div className="flex items-center gap-2 py-1">
+        <Checkbox
+          checked={checked}
+          disabled={disabled}
+          onCheckedChange={(value) => onToggle(item.id, value === true)}
+        />
+        <button
+          type="button"
+          className="min-w-0 flex-1 truncate text-left text-xs"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {item.name}
+        </button>
+        <Badge variant={item.attention || item.tier === "risky" ? "destructive" : "outline"}>
+          {item.attention ? "Check" : status}
+          {item.reboot ? " · reboot" : ""}
+        </Badge>
       </div>
-    </label>
+      {open ? (
+        <div className="ui-selectable pb-2 pl-6 text-xs text-muted-foreground">
+          <p>{item.note}</p>
+          {item.detail ? <TextLinks className="mt-1 block" text={item.detail} /> : null}
+        </div>
+      ) : null}
+    </div>
   );
 }

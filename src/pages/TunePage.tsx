@@ -41,7 +41,7 @@ export function TunePage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-ui-scroll-container className="h-full min-h-0 space-y-3 overflow-y-auto text-sm">
       <p className="text-sm">{copy.tuneLead}</p>
       <div className="max-w-sm space-y-1">
         <Label>{copy.tuneScene}</Label>
@@ -77,7 +77,7 @@ export function TunePage() {
         </Button>
       </div>
       {library.map((c) => (
-        <Card key={c.groupId}>
+        <Card key={c.groupId} size="sm">
           <CardHeader>
             <CardTitle>
               {c.groupId} {c.displayName}

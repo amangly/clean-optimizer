@@ -10,8 +10,7 @@ export function LogPage() {
   }, []);
 
   return (
-    <pre className="ui-selectable whitespace-pre-wrap rounded-xl border bg-card p-4 text-xs leading-5">
-      {text || copy.logEmpty}
+    <pre data-ui-scroll-container className="ui-selectable h-full min-h-0 overflow-y-auto whitespace-pre-wrap rounded-none border bg-card p-3 text-xs leading-5">      {text || copy.logEmpty}
     </pre>
   );
 }

@@ -185,11 +185,22 @@ fn read_reg_sz(path: &str, name: &str) -> Option<String> {
 }
 
 fn cmd(bin: &str, args: &[&str]) -> String {
-    std::process::Command::new(bin)
-        .args(args)
-        .output()
-        .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
-        .unwrap_or_default()
+    #[cfg(windows)]
+    {
+        crate::win::hidden_command(bin)
+            .args(args)
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
+            .unwrap_or_default()
+    }
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new(bin)
+            .args(args)
+            .output()
+            .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
+            .unwrap_or_default()
+    }
 }
 
 #[cfg(test)]

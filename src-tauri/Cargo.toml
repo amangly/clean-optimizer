@@ -24,6 +24,7 @@ sha2 = "0.10"
 hex = "0.4"
 uuid = { version = "1", features = ["v4"] }
 rfd = "0.15"
+ureq = { version = "2.12", features = ["json"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.55"

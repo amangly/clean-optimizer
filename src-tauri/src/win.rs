@@ -14,6 +14,12 @@ use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken}
 
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
+pub fn hidden_command(bin: &str) -> Command {
+    let mut command = Command::new(bin);
+    command.creation_flags(CREATE_NO_WINDOW);
+    command
+}
+
 pub fn is_admin() -> bool {
     unsafe {
         let mut token: HANDLE = std::ptr::null_mut();

@@ -55,11 +55,19 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(external_navigation_plugin())
+        .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                window.show()?;
+                window.set_focus()?;
+            }
+            Ok(())
+        })
         .on_page_load(|webview, payload| {
             if payload.event() == PageLoadEvent::Finished {
-                if let Some(window) = webview.app_handle().get_webview_window(webview.label()) {
-                    let _ = window.show();
-                }
+                let _ = webview.app_handle().get_webview_window("main").map(|w| {
+                    let _ = w.show();
+                    let _ = w.set_focus();
+                });
             }
         })
         .invoke_handler(tauri::generate_handler![

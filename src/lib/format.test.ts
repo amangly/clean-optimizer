@@ -3,7 +3,7 @@ import { formatBytes, formatRam, statusLabel } from "./format";
 
 describe("format", () => {
   it("formats ram", () => {
-    expect(formatRam(32)).toBe("32.0 GB RAM");
+    expect(formatRam(32)).toBe("32 GB");
     expect(formatRam(0)).toBe("RAM unknown");
   });
 

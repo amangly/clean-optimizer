@@ -2,7 +2,7 @@ export function formatRam(gb: number): string {
   if (!Number.isFinite(gb) || gb <= 0) {
     return "RAM unknown";
   }
-  return `${gb.toFixed(1)} GB RAM`;
+  return `${gb.toFixed(gb >= 10 ? 0 : 1)} GB`;
 }
 
 export function formatBytes(bytes: number): string {

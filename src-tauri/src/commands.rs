@@ -230,7 +230,7 @@ pub fn cancel_experiment() -> Result<ExperimentState> {
 
 #[tauri::command]
 pub fn check_update() -> Result<UpdateInfo> {
-    update::check("0.1.0", None)
+    update::check(env!("CARGO_PKG_VERSION"))
 }
 
 #[tauri::command]

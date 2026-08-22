@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Disclaimer } from "@/components/Disclaimer";
-import { HardwareBar } from "@/components/HardwareBar";
-import { Logo } from "@/components/Logo";
+import { Loading } from "@/components/Loading";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
@@ -15,7 +14,12 @@ import { LogPage } from "@/pages/LogPage";
 import { OptimizePage } from "@/pages/OptimizePage";
 import { ReferencePage } from "@/pages/ReferencePage";
 import { TunePage } from "@/pages/TunePage";
-import type { DetectReport, ItemResult, LiveMetrics, Prefs, Preset, RestoreItem, TabId, UpdateInfo } from "@/lib/types";
+import type { DetectReport, ItemResult, LiveMetrics, Prefs, Preset, RestoreItem, TabId } from "@/lib/types";
+
+const HardwareBar = lazy(async () => {
+  const mod = await import("@/components/HardwareBar");
+  return { default: mod.HardwareBar };
+});
 
 export function App() {
   const { theme, setTheme } = useTheme();
@@ -30,8 +34,7 @@ export function App() {
   const [error, setError] = useState("");
   const [lastApply, setLastApply] = useState<ItemResult[] | null>(null);
   const [elevated, setElevated] = useState(true);
-  const [reread, setReread] = useState(false);
-  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [settings, setSettings] = useState(false);
 
   useEffect(() => {
     void api
@@ -44,7 +47,6 @@ export function App() {
       })
       .catch((e: Error) => setError(e.message));
     void api.isElevated().then(setElevated);
-    void api.checkUpdate().then(setUpdate).catch(() => undefined);
   }, [setTheme]);
 
   useEffect(() => {
@@ -52,9 +54,10 @@ export function App() {
       return;
     }
     void refresh();
+    void api.liveMetrics().then(setMetrics).catch(() => undefined);
     const id = window.setInterval(() => {
       void api.liveMetrics().then(setMetrics).catch(() => undefined);
-    }, 2000);
+    }, 1000);
     return () => window.clearInterval(id);
   }, [prefs?.disclaimerAccepted]);
 
@@ -116,71 +119,59 @@ export function App() {
   }
 
   if (!prefs) {
-    return <div className="grid h-dvh place-items-center text-sm text-muted-foreground">{error || "Loading"}</div>;
+    if (error) {
+      return (
+        <div className="grid h-dvh place-items-center gap-2 text-xs text-muted-foreground">
+          <p>{error}</p>
+        </div>
+      );
+    }
+    return <Loading label={copy.loading} />;
   }
   if (!prefs.disclaimerAccepted) {
     return <Disclaimer onAccept={() => void accept()} onQuit={() => void api.closeApp()} />;
   }
   if (!report) {
-    return <div className="grid h-dvh place-items-center text-sm text-muted-foreground">{error || copy.detectFailed}</div>;
+    if (error) {
+      return (
+        <div className="grid h-dvh place-items-center gap-2">
+          <p className="text-xs text-muted-foreground">{error || copy.detectFailed}</p>
+          <Button onClick={() => void refresh()}>{copy.retry}</Button>
+        </div>
+      );
+    }
+    return <Loading label={copy.loading} />;
   }
 
   return (
-    <div className="flex h-dvh flex-col">
-      <header className="space-y-3 border-b px-5 py-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="flex items-start gap-3">
-            <Logo />
-            <div>
-              <h1 className="text-lg font-semibold">{copy.appName}</h1>
-              <p className="text-sm text-muted-foreground">{copy.tagline}</p>
-              <p className="text-xs text-muted-foreground">{copy.unofficial}</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={prefs.telemetry}
-                onCheckedChange={(on) => void persist({ ...prefs, telemetry: on })}
-              />
-              <Label className="text-xs font-normal">{copy.telemetry}</Label>
-            </div>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const next = theme === "dark" ? "light" : "dark";
-                setTheme(next);
-                void persist({ ...prefs, theme: next });
-              }}
-            >
-              {theme === "dark" ? copy.themeLight : copy.themeDark}
+    <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
+      <header className="flex h-11 shrink-0 items-center gap-3 border-b px-3">
+        <nav className="flex min-w-0 flex-1 gap-0.5">
+          {(Object.keys(copy.tabs) as TabId[]).map((id) => (
+            <Button key={id} variant={tab === id ? "default" : "ghost"} onClick={() => setTab(id)}>
+              {copy.tabs[id]}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => setReread(true)}>
-              {copy.rereadDisclaimer}
-            </Button>
-          </div>
-        </div>
-        {!elevated ? (
-          <Alert>
-            {copy.adminNeeded}{" "}
-            <Button size="sm" className="ml-2" onClick={() => void api.relaunchElevated()}>
-              {copy.relaunchAdmin}
-            </Button>
-          </Alert>
-        ) : null}
-        {error ? <Alert>{error}</Alert> : null}
-        {update && !update.available ? <p className="text-xs text-muted-foreground">{copy.updateNone}</p> : null}
-        <HardwareBar hardware={report.hardware} metrics={metrics} />
-      </header>
-      <nav className="flex flex-wrap gap-1 border-b px-5 py-2">
-        {(Object.keys(copy.tabs) as TabId[]).map((id) => (
-          <Button key={id} size="sm" variant={tab === id ? "default" : "ghost"} onClick={() => setTab(id)}>
-            {copy.tabs[id]}
+          ))}
+        </nav>
+        <div className="flex shrink-0 items-center gap-3 border-l pl-3">
+          <Suspense fallback={null}>
+            <HardwareBar hardware={report.hardware} metrics={metrics} />
+          </Suspense>
+          <Button variant="ghost" onClick={() => setSettings(true)}>
+            {copy.settings}
           </Button>
-        ))}
-      </nav>
-      <main data-ui-scroll-container className="min-h-0 flex-1 px-5 py-4">
+        </div>
+      </header>
+      {!elevated ? (
+        <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">
+          {copy.adminNeeded}{" "}
+          <Button className="ml-1" onClick={() => void api.relaunchElevated()}>
+            {copy.relaunchAdmin}
+          </Button>
+        </Alert>
+      ) : null}
+      {error ? <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{error}</Alert> : null}
+      <main className="min-h-0 flex-1 overflow-hidden px-3 py-2">
         {tab === "optimize" ? (
           <OptimizePage
             report={report}
@@ -205,19 +196,38 @@ export function App() {
         {tab === "reference" ? <ReferencePage /> : null}
         {tab === "log" ? <LogPage /> : null}
       </main>
-      <Dialog open={reread} onOpenChange={setReread}>
+      <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent>
-          <DialogTitle>{copy.disclaimerTitle}</DialogTitle>
-          <DialogDescription asChild>
-            <div className="ui-selectable max-h-80 space-y-3 overflow-y-auto text-sm">
-              {copy.disclaimerBody.map((p) => (
-                <p key={p}>{p}</p>
-              ))}
-            </div>
-          </DialogDescription>
-          <Button className="mt-4" variant="outline" onClick={() => setReread(false)}>
-            {copy.quit}
-          </Button>
+          <DialogTitle>{copy.settings}</DialogTitle>
+          <DialogDescription>{copy.unofficial}</DialogDescription>
+          <p className="mt-2 text-sm text-muted-foreground">{copy.tagline}</p>
+          <div className="mt-3 flex items-center gap-2">
+            <Switch
+              checked={prefs.telemetry}
+              onCheckedChange={(on) => void persist({ ...prefs, telemetry: on })}
+            />
+            <Label className="text-xs font-normal">{copy.telemetry}</Label>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                const next = theme === "dark" ? "light" : "dark";
+                setTheme(next);
+                void persist({ ...prefs, theme: next });
+              }}
+            >
+              {theme === "dark" ? copy.themeLight : copy.themeDark}
+            </Button>
+            <Button variant="ghost" onClick={() => setSettings(false)}>
+              {copy.quit}
+            </Button>
+          </div>
+          <div className="ui-selectable mt-3 max-h-48 space-y-2 overflow-y-auto text-xs text-muted-foreground">
+            {copy.disclaimerBody.map((p) => (
+              <p key={p}>{p}</p>
+            ))}
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -3,11 +3,10 @@ import { ItemRow } from "@/components/ItemRow";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { copy } from "@/lib/copy";
-import type { DetectReport, ItemResult, RestoreItem, Preset } from "@/lib/types";
+import type { DetectReport, ItemResult, ItemView, RestoreItem, Preset } from "@/lib/types";
 
 type Props = {
   report: DetectReport;
@@ -24,6 +23,26 @@ type Props = {
   onSavePreset: (name: string, items: string[]) => void;
   onDeletePreset: (id: string) => void;
 };
+
+function groupItems(items: ItemView[]) {
+  const windows: ItemView[] = [];
+  const game: ItemView[] = [];
+  const checks: ItemView[] = [];
+  for (const item of items) {
+    if (item.kind === "check" || item.kind === "cache") {
+      checks.push(item);
+    } else if (item.requiresGame) {
+      game.push(item);
+    } else {
+      windows.push(item);
+    }
+  }
+  return [
+    { id: "windows", title: copy.secWindows, items: windows },
+    { id: "game", title: copy.secGame, items: game },
+    { id: "checks", title: copy.secChecks, items: checks },
+  ].filter((g) => g.items.length > 0);
+}
 
 export function OptimizePage({
   report,
@@ -45,6 +64,8 @@ export function OptimizePage({
   );
   const [presetId, setPresetId] = useState("balanced");
   const [presetName, setPresetName] = useState("");
+  const [more, setMore] = useState(false);
+  const [guide, setGuide] = useState(false);
   const [confirmRisky, setConfirmRisky] = useState(false);
   const [restoreOpen, setRestoreOpen] = useState(false);
   const [restorePick, setRestorePick] = useState<Set<string>>(new Set());
@@ -53,6 +74,12 @@ export function OptimizePage({
   const selectedList = useMemo(() => [...selected], [selected]);
   const hasSpoof = selected.has("gpu-name-spoof");
   const preset = presets.find((p) => p.id === presetId);
+  const groups = useMemo(() => groupItems(report.items), [report.items]);
+  const selective = restoreItems.filter((i) => i.selective);
+
+  const wrote = lastApply?.filter((r) => r.ok && r.changed).length ?? 0;
+  const failed = lastApply?.filter((r) => !r.ok).length ?? 0;
+  const skipped = lastApply?.filter((r) => r.skipped).length ?? 0;
 
   function toggle(id: string, next: boolean) {
     setSelected((cur) => {
@@ -83,73 +110,79 @@ export function OptimizePage({
     onApply(selectedList, false, null);
   }
 
-  const selective = restoreItems.filter((i) => i.selective);
-
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="min-w-[240px] flex-1 space-y-1">
-          <Label>{copy.gamePath}</Label>
-          <Input value={gamePath} onChange={(e) => onGamePath(e.target.value)} />
-        </div>
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+        <Input
+          className="min-w-[160px] flex-1"
+          placeholder={copy.gamePath}
+          value={gamePath}
+          onChange={(e) => onGamePath(e.target.value)}
+        />
         <Button variant="outline" onClick={onFind} disabled={busy}>
           {copy.find}
         </Button>
         <Button variant="outline" onClick={onBrowse} disabled={busy}>
           {copy.browse}
         </Button>
+        <Select value={presetId} onValueChange={loadPreset}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {presets.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button variant="ghost" onClick={() => setMore((v) => !v)}>
+          {more ? copy.hide : copy.more}
+        </Button>
       </div>
 
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="space-y-1">
-          <Label>{copy.preset}</Label>
-          <Select value={presetId} onValueChange={loadPreset}>
-            <SelectTrigger className="w-[220px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {presets.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      {more ? (
+        <div className="mt-2 flex shrink-0 flex-wrap items-center gap-1.5">
+          <Button
+            variant="outline"
+            onClick={() => setSelected(new Set(report.items.filter((i) => i.default && i.bulkSelect).map((i) => i.id)))}
+          >
+            {copy.selectDefaults}
+          </Button>
+          <Button variant="outline" onClick={() => setSelected(new Set())}>
+            {copy.selectNone}
+          </Button>
+          <Input
+            className="max-w-[140px]"
+            placeholder="Preset name"
+            value={presetName}
+            onChange={(e) => setPresetName(e.target.value)}
+          />
+          <Button variant="outline" onClick={() => presetName && onSavePreset(presetName, selectedList)}>
+            {copy.savePreset}
+          </Button>
+          <Button variant="outline" onClick={() => onDeletePreset(presetId)} disabled={preset?.builtin}>
+            {copy.deletePreset}
+          </Button>
+          <Button
+            variant="outline"
+            disabled={busy || selective.length === 0}
+            onClick={() => {
+              setRestorePick(new Set(selective.map((i) => i.id)));
+              setRestoreOpen(true);
+            }}
+          >
+            {copy.restoreSelected}
+          </Button>
         </div>
-        <Button variant="outline" onClick={() => loadPreset(presetId)}>
-          {copy.selectPreset}
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => setSelected(new Set(report.items.filter((i) => i.default && i.bulkSelect).map((i) => i.id)))}
-        >
-          {copy.selectDefaults}
-        </Button>
-        <Button variant="outline" onClick={() => setSelected(new Set())}>
-          {copy.selectNone}
-        </Button>
-        <Input
-          className="max-w-[180px]"
-          placeholder="Preset name"
-          value={presetName}
-          onChange={(e) => setPresetName(e.target.value)}
-        />
-        <Button variant="outline" onClick={() => presetName && onSavePreset(presetName, selectedList)}>
-          {copy.savePreset}
-        </Button>
-        <Button variant="outline" onClick={() => onDeletePreset(presetId)} disabled={preset?.builtin}>
-          {copy.deletePreset}
-        </Button>
-      </div>
-
-      {preset?.note ? <p className="text-sm text-muted-foreground">{preset.note}</p> : null}
+      ) : null}
 
       {hasSpoof && report.spoofModels.length > 0 ? (
-        <div className="max-w-sm space-y-1">
-          <Label>{copy.spoofAs}</Label>
+        <div className="mt-2 max-w-xs shrink-0">
           <Select value={spoof} onValueChange={setSpoof}>
             <SelectTrigger>
-              <SelectValue />
+              <SelectValue placeholder={copy.spoofAs} />
             </SelectTrigger>
             <SelectContent>
               {report.spoofModels.map((model) => (
@@ -162,50 +195,55 @@ export function OptimizePage({
         </div>
       ) : null}
 
-      <div className="space-y-2">
-        {report.items.map((item) => (
-          <ItemRow key={item.id} item={item} checked={selected.has(item.id)} onToggle={toggle} />
+      <div data-ui-scroll-container className="mt-2 min-h-0 flex-1 overflow-y-auto">
+        {groups.map((group) => (
+          <section key={group.id} className="mb-3 last:mb-0">
+            <h2 className="mb-0.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              {group.title}
+            </h2>
+            <div className="rounded-none border px-2">
+              {group.items.map((item) => (
+                <ItemRow key={item.id} item={item} checked={selected.has(item.id)} onToggle={toggle} />
+              ))}
+            </div>
+          </section>
         ))}
+
+        {lastApply ? (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {wrote} {copy.wrote}
+            {failed ? ` · ${failed} ${copy.failed}` : ""}
+            {skipped ? ` · ${skipped} ${copy.skipped}` : ""}
+          </p>
+        ) : null}
+
+        {report.gpuGuide.length ? (
+          <div className="mt-1">
+            <button type="button" className="text-[11px] text-muted-foreground underline-offset-2 hover:underline" onClick={() => setGuide((v) => !v)}>
+              {copy.gpuPanel}
+            </button>
+            {guide
+              ? report.gpuGuide.map((line) => (
+                  <p key={line} className="text-[11px] text-muted-foreground">
+                    {line}
+                  </p>
+                ))
+              : null}
+          </div>
+        ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="flex shrink-0 items-center gap-2 border-t pt-2">
         <Button disabled={busy || selectedList.length === 0} onClick={requestApply}>
-          {copy.apply}
+          {copy.apply} · {selectedList.length}
         </Button>
         <Button variant="outline" onClick={() => onRestore(null)} disabled={busy}>
           {copy.restoreAll}
         </Button>
-        <Button
-          variant="outline"
-          disabled={busy || selective.length === 0}
-          onClick={() => {
-            setRestorePick(new Set(selective.map((i) => i.id)));
-            setRestoreOpen(true);
-          }}
-        >
-          {copy.restoreSelected}
-        </Button>
+        <span className="text-[11px] text-muted-foreground">
+          {selectedList.length} {copy.selected}
+        </span>
       </div>
-
-      {lastApply ? (
-        <div className="space-y-1">
-          {lastApply.map((r) => (
-            <div key={`${r.id}-${r.message}`} className="text-xs text-muted-foreground">
-              {r.name}: {r.message}
-            </div>
-          ))}
-        </div>
-      ) : null}
-
-      {report.gpuGuide.length ? (
-        <div className="space-y-1">
-          {report.gpuGuide.map((line) => (
-            <p key={line} className="text-sm text-muted-foreground">
-              {line}
-            </p>
-          ))}
-        </div>
-      ) : null}
 
       <Dialog open={confirmRisky} onOpenChange={setConfirmRisky}>
         <DialogContent>

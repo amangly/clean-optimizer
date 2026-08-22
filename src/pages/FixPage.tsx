@@ -32,7 +32,7 @@ export function FixPage() {
   }
 
   return (
-    <div className="space-y-4">
+    <div data-ui-scroll-container className="h-full min-h-0 space-y-3 overflow-y-auto text-sm">
       <p className="text-sm">{copy.fixLead}</p>
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => void run()}>{copy.runChecks}</Button>
@@ -41,7 +41,7 @@ export function FixPage() {
         </Button>
       </div>
       {checks.map((c) => (
-        <Card key={c.id}>
+        <Card key={c.id} size="sm">
           <CardHeader>
             <CardTitle>{c.id}</CardTitle>
           </CardHeader>

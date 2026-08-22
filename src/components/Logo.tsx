@@ -6,5 +6,13 @@ type Props = {
 };
 
 export function Logo({ className }: Props) {
-  return <img src={logo} alt="" width={40} height={40} className={cn("size-10 rounded-md", className)} />;
+  return (
+    <img
+      src={logo}
+      alt=""
+      width={32}
+      height={32}
+      className={cn("size-8 shrink-0 rounded-none bg-black object-cover", className)}
+    />
+  );
 }

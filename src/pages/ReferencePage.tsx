@@ -9,11 +9,11 @@ const data = reference as { note: string; groups: Group[] };
 
 export function ReferencePage() {
   return (
-    <div className="space-y-4">
+    <div data-ui-scroll-container className="h-full min-h-0 space-y-3 overflow-y-auto text-sm">
       <p className="text-sm">{copy.refLead}</p>
       <p className="text-sm text-muted-foreground">{data.note}</p>
       {data.groups.map((group) => (
-        <Card key={group.name}>
+        <Card key={group.name} size="sm">
           <CardHeader>
             <CardTitle>{group.name}</CardTitle>
           </CardHeader>

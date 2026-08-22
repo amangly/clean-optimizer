@@ -36,12 +36,12 @@ export function Disclaimer({ onAccept, onQuit }: Props) {
     <div className="mx-auto flex h-dvh max-w-xl flex-col gap-4 px-6 py-8">
       <div className="flex items-center gap-3">
         <Logo />
-        <h1 className="text-lg font-semibold">{copy.disclaimerTitle}</h1>
+        <h1 className="font-heading text-lg font-medium">{copy.disclaimerTitle}</h1>
       </div>
       <div
         ref={scroller}
         data-ui-scroll-container
-        className="min-h-0 flex-1 overflow-y-auto rounded-xl border bg-card p-4"
+        className="min-h-0 flex-1 overflow-y-auto rounded-none border bg-card p-4"
         onScroll={measure}
       >
         <div className="ui-selectable space-y-3 text-sm leading-6">

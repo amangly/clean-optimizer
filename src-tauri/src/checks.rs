@@ -23,7 +23,7 @@ fn pcie() -> CheckResult {
             text: "nvidia-smi not found. PCIe width is only read for NVIDIA.".into(),
         };
     }
-    let out = std::process::Command::new(smi.unwrap())
+    let out = hidden_cmd(&smi.unwrap())
         .args(["--query-gpu=pcie.link.gen.max,pcie.link.width.max,pcie.link.gen.current,pcie.link.width.current", "--format=csv,noheader"])
         .output();
     match out {
@@ -163,8 +163,19 @@ fn nv_auto() -> CheckResult {
     }
 }
 
+fn hidden_cmd(bin: &str) -> std::process::Command {
+    #[cfg(windows)]
+    {
+        crate::win::hidden_command(bin)
+    }
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new(bin)
+    }
+}
+
 fn cmd(bin: &str, args: &[&str]) -> String {
-    std::process::Command::new(bin)
+    hidden_cmd(bin)
         .args(args)
         .output()
         .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
