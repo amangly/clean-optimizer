@@ -153,6 +153,7 @@ export type UpdateInfo = {
   assetUrl: string | null;
   sha256: string | null;
   available: boolean;
+  reached: boolean;
 };
 
 export type TabId = "optimize" | "tune" | "fix" | "reference" | "log";

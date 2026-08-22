@@ -14,8 +14,8 @@ Windows app. Writes registry, power plan, and service settings for the Chinese D
 Looks for `DeltaForceClient-Win64-Shipping.exe`, `DeltaForceClient.exe`, or `DeltaForce.exe`. Other clients are not supported yet. System items need administrator.
 
 ```
-npm install
-npx tauri build
+bun install
+bunx tauri build
 ```
 
 Installer: `src-tauri\target\release\bundle\nsis\`. The release exe has no console window.

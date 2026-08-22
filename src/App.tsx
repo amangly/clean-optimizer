@@ -36,6 +36,7 @@ export function App() {
   const [elevated, setElevated] = useState(true);
   const [settings, setSettings] = useState(false);
   const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [updating, setUpdating] = useState(false);
   const [version, setVersion] = useState("");
 
   useEffect(() => {
@@ -57,7 +58,19 @@ export function App() {
       return;
     }
     void refresh();
-    void api.checkUpdate().then(setUpdate).catch(() => undefined);
+    void api
+      .checkUpdate()
+      .then((info) => {
+        setUpdate(info);
+        if (info.available) {
+          setUpdating(true);
+          void api.downloadUpdate().catch((e: Error) => {
+            setUpdating(false);
+            setError(e.message);
+          });
+        }
+      })
+      .catch(() => undefined);
     void api.liveMetrics().then(setMetrics).catch(() => undefined);
     const id = window.setInterval(() => {
       void api.liveMetrics().then(setMetrics).catch(() => undefined);
@@ -150,9 +163,15 @@ export function App() {
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
       <header className="grid h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 overflow-hidden border-b px-3">
-        <nav className="relative z-10 flex min-w-0 items-center gap-0.5 overflow-x-auto bg-background">
+        <nav className="relative z-10 flex min-w-0 items-center gap-0 overflow-hidden bg-background">
           {(Object.keys(copy.tabs) as TabId[]).map((id) => (
-            <Button key={id} variant={tab === id ? "default" : "ghost"} onClick={() => setTab(id)}>
+            <Button
+              key={id}
+              size="xs"
+              variant={tab === id ? "default" : "ghost"}
+              className="min-w-0 shrink px-1.5 text-[11px]"
+              onClick={() => setTab(id)}
+            >
               {copy.tabs[id]}
             </Button>
           ))}
@@ -162,7 +181,9 @@ export function App() {
             <HardwareBar hardware={report.hardware} metrics={metrics} />
           </Suspense>
           <Button
+            size="xs"
             variant="ghost"
+            className="px-1.5 text-[11px]"
             onClick={() => {
               setSettings(true);
               void api.checkUpdate().then(setUpdate).catch(() => undefined);
@@ -179,6 +200,9 @@ export function App() {
             {copy.relaunchAdmin}
           </Button>
         </Alert>
+      ) : null}
+      {updating ? (
+        <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{copy.updateInstalling}</Alert>
       ) : null}
       {error ? <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{error}</Alert> : null}
       <main className="min-h-0 flex-1 overflow-hidden px-3 py-2">
@@ -218,7 +242,11 @@ export function App() {
                 {update?.latest ? ` · latest ${update.latest}` : ""}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
-                {update?.available ? update.notes || copy.updateReady : copy.updateNone}
+                {update && !update.reached
+                  ? update.notes || copy.updateMiss
+                  : update?.available
+                    ? update.notes || copy.updateReady
+                    : copy.updateNone}
               </p>
               <div className="mt-3 flex items-center gap-2">
                 <Switch

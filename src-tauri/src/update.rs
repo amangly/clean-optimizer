@@ -18,6 +18,7 @@ pub struct UpdateInfo {
     pub asset_url: Option<String>,
     pub sha256: Option<String>,
     pub available: bool,
+    pub reached: bool,
 }
 
 #[derive(Deserialize)]
@@ -65,6 +66,7 @@ fn empty(current: &str, notes: &str) -> UpdateInfo {
         asset_url: None,
         sha256: None,
         available: false,
+        reached: false,
     }
 }
 
@@ -88,6 +90,7 @@ pub fn parse_release(current: &str, json: &str) -> Result<UpdateInfo> {
         asset_url: asset.map(|a| a.browser_download_url.clone()),
         sha256: asset.and_then(|a| a.digest.as_deref()).and_then(strip_sha),
         available,
+        reached: true,
     })
 }
 
@@ -107,15 +110,14 @@ pub fn apply_latest(current: &str) -> Result<PathBuf> {
     }
     let dest = std::env::temp_dir().join("clean-optimizer-update");
     let path = download(&info, &dest)?;
-    start_installer(&path)?;
-    Ok(path)
+    start_installer(&path)
 }
 
-fn start_installer(path: &Path) -> Result<()> {
+fn start_installer(path: &Path) -> Result<PathBuf> {
     std::process::Command::new(path)
         .spawn()
         .map_err(|e| Error::Msg(e.to_string()))?;
-    Ok(())
+    std::process::exit(0);
 }
 
 pub fn download(info: &UpdateInfo, dest_dir: &Path) -> Result<PathBuf> {
@@ -217,6 +219,7 @@ mod tests {
         let json = r#"{"tag_name":"v0.2.0","html_url":"https://github.com/amangly/clean-optimizer/releases/tag/v0.2.0","body":"fix"}"#;
         let info = parse_release("0.1.0", json).unwrap();
         assert!(info.available);
+        assert!(info.reached);
         assert_eq!(info.latest.as_deref(), Some("0.2.0"));
     }
 
