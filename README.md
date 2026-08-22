@@ -4,7 +4,11 @@
 
 <h1 align="center">Clean Optimizer</h1>
 
-<p align="center">Tauri 2 · Rust · React 19 · TypeScript · Vite · Tailwind 4 · shadcn/ui</p>
+<p align="center">
+  <img src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&logoColor=white" alt="Tauri" />
+  <img src="https://img.shields.io/badge/Rust-000000?logo=rust&logoColor=white" alt="Rust" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
+</p>
 
 Windows app. Writes registry, power plan, and service settings for the Chinese Delta Force client (三角洲行动). Each write is backed up. Restore puts the old value back. The game install is left alone.
 
