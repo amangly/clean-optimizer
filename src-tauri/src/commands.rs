@@ -12,6 +12,7 @@ use crate::paths::Paths;
 use crate::prefs;
 use crate::presets;
 use crate::restore;
+use crate::store::Store;
 use crate::tuning::{self, Candidate, ExperimentState};
 use crate::types::{
     ApplyReport, DetectReport, LiveMetrics, Prefs, Preset, RestoreItem, RestoreReport,
@@ -204,8 +205,8 @@ pub fn read_log() -> Result<String> {
 }
 
 #[tauri::command]
-pub fn start_experiment(scene_id: String) -> Result<ExperimentState> {
-    tuning::start(&paths()?.user, &scene_id)
+pub fn start_experiment(scene_id: String, game_path: Option<String>) -> Result<ExperimentState> {
+    tuning::start(&paths()?.user, &scene_id, game_path)
 }
 
 #[tauri::command]
@@ -220,7 +221,45 @@ pub fn experiment_library() -> Result<Vec<Candidate>> {
 
 #[tauri::command]
 pub fn confirm_experiment_round(avg_fps: f64, low_1pct: f64, hitches: u32) -> Result<ExperimentState> {
-    tuning::confirm_round(&paths()?.user, avg_fps, low_1pct, hitches)
+    let user = paths()?.user;
+    let before = tuning::load(&user)?;
+    let after = tuning::confirm_round(&user, avg_fps, low_1pct, hitches)?;
+    if let Some(before) = before {
+        sync_experiment(&before, &after)?;
+    }
+    Ok(after)
+}
+
+fn group_ids(group: &str) -> Vec<String> {
+    tuning::library()
+        .into_iter()
+        .find(|c| c.group_id == group)
+        .map(|c| c.item_ids)
+        .unwrap_or_default()
+}
+
+fn sync_experiment(before: &ExperimentState, after: &ExperimentState) -> Result<()> {
+    if let Some(group) = &before.current_group {
+        if after.rolled_back.last() == Some(group) {
+            let _ = restore::restore(store().as_ref(), &BackupStore::open(&paths()?.root)?, Some(group_ids(group)));
+        }
+    }
+    if after.current_group != before.current_group {
+        if let Some(group) = &after.current_group {
+            let hw = hardware::detect()?;
+            let backups = BackupStore::open(&paths()?.root)?;
+            let req = ApplyRequest {
+                items: group_ids(group),
+                preset: None,
+                game_path: after.game_path.clone(),
+                gpu_spoof_model: None,
+                risky: false,
+                admin: admin(),
+            };
+            let _ = apply::apply(store().as_ref(), &backups, &hw, req, None)?;
+        }
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -231,6 +270,39 @@ pub fn cancel_experiment() -> Result<ExperimentState> {
 #[tauri::command]
 pub fn check_update() -> Result<UpdateInfo> {
     update::check(env!("CARGO_PKG_VERSION"))
+}
+
+#[tauri::command]
+pub fn app_version() -> String {
+    env!("CARGO_PKG_VERSION").to_string()
+}
+
+#[tauri::command]
+pub fn download_update() -> Result<String> {
+    let path = update::apply_latest(env!("CARGO_PKG_VERSION"))?;
+    Ok(path.display().to_string())
+}
+
+#[tauri::command]
+pub fn diagnose() -> Result<String> {
+    let hw = hardware::detect()?;
+    let found = game::find_game()?;
+    let store = store();
+    let catalog = items::catalog(&hw, found.as_deref(), None);
+    let mut lines = vec![
+        format!("cpu={}", hw.cpu_name),
+        format!("gpu={}", hw.main_gpu.as_ref().map(|g| g.name.as_str()).unwrap_or("none")),
+        format!("brand={}", hw.brand),
+        format!("admin={}", hw.is_admin),
+        format!("game={}", found.as_deref().unwrap_or("none")),
+        format!("scheme={:?}", Store::active_scheme(store.as_ref())?),
+        format!("tool={:?}", Store::tool_scheme(store.as_ref())?),
+    ];
+    for item in catalog {
+        let state = items::item_state(&item, store.as_ref(), &hw);
+        lines.push(format!("{} state={state:?}", item.id));
+    }
+    Ok(lines.join("\n"))
 }
 
 #[tauri::command]

@@ -1,29 +1,72 @@
 {
-  "updated": "2026-08-22",
-  "note": "Performance-first column. Change these in the game.",
+  "updated": "2026-08-23",
+  "note": "Settings, Video in 三角洲行动. This app does not write these values.",
   "groups": [
     {
       "name": "Display",
       "rows": [
-        { "name": "Display mode", "perf": "Fullscreen", "notes": "Exclusive fullscreen if the game offers it." },
-        { "name": "Resolution", "perf": "Native", "notes": "Use the monitor's native timing." },
+        { "name": "Display adapter", "perf": "Discrete GPU", "notes": "Pick the NVIDIA or AMD card." },
+        { "name": "Display mode", "perf": "Fullscreen", "notes": "Borderless if you alt-tab a lot." },
+        { "name": "Resolution", "perf": "Native", "notes": "Use the monitor native timing." },
         { "name": "Refresh rate", "perf": "Max the display allows", "notes": "" },
-        { "name": "In-match frame cap", "perf": "Display Hz or uncapped", "notes": "Cap if you want heat down." },
+        { "name": "Aspect ratio", "perf": "16:9 unless you use a stretched res", "notes": "" },
+        { "name": "In-match frame cap", "perf": "Uncapped or display Hz", "notes": "Cap if heat or tear bothers you." },
+        { "name": "Out-of-match frame cap", "perf": "Uncapped or 60", "notes": "" },
+        { "name": "Background frame cap", "perf": "5", "notes": "" },
+        { "name": "Sharpen", "perf": "50-60", "notes": "" },
         { "name": "VSync", "perf": "Off", "notes": "" },
         { "name": "NVIDIA Fast Sync", "perf": "Off", "notes": "" }
       ]
     },
     {
-      "name": "Quality",
+      "name": "Combat view",
       "rows": [
-        { "name": "Quality preset", "perf": "Custom / Low", "notes": "Start low, raise texture if VRAM allows." },
-        { "name": "Anti-aliasing", "perf": "TAA low or off", "notes": "" },
-        { "name": "Shadows", "perf": "Low", "notes": "" },
-        { "name": "Global illumination", "perf": "Low or off", "notes": "" },
+        { "name": "Default FOV", "perf": "100-105", "notes": "Wider FOV costs GPU time." },
+        { "name": "Vehicle third-person FOV", "perf": "120-130", "notes": "" },
+        { "name": "Scope inner zoom", "perf": "Off", "notes": "" }
+      ]
+    },
+    {
+      "name": "Basic quality",
+      "rows": [
+        { "name": "Quality preset", "perf": "Custom", "notes": "Start low, raise textures if VRAM allows." },
+        { "name": "Style", "perf": "Realistic", "notes": "" },
+        { "name": "Anti-aliasing", "perf": "TemporalAA or off", "notes": "" },
+        { "name": "Weapon motion blur", "perf": "Off", "notes": "" },
         { "name": "Reflections", "perf": "Low", "notes": "" },
-        { "name": "Effects / particles", "perf": "Low", "notes": "" },
-        { "name": "View distance", "perf": "Medium", "notes": "Fight visibility vs GPU time." },
-        { "name": "Render scale", "perf": "100% or DLSS/FSR/XeSS", "notes": "Vendor upscalers beat a raw drop." }
+        { "name": "Texture filtering", "perf": "High or Ultra", "notes": "Cheap sharpness." },
+        { "name": "Ambient occlusion", "perf": "Off", "notes": "" },
+        { "name": "Particles", "perf": "Low", "notes": "" },
+        { "name": "Distortion", "perf": "Low", "notes": "" },
+        { "name": "Scene detail", "perf": "Low", "notes": "" },
+        { "name": "View distance", "perf": "High or Ultra", "notes": "Fight visibility vs GPU time." }
+      ]
+    },
+    {
+      "name": "Advanced quality",
+      "rows": [
+        { "name": "Render scale", "perf": "100% or an upscaler", "notes": "Vendor upscalers beat a raw drop." },
+        { "name": "Depth of field", "perf": "Off", "notes": "" },
+        { "name": "Global illumination", "perf": "Low", "notes": "" },
+        { "name": "Shaders", "perf": "Low", "notes": "" },
+        { "name": "Textures", "perf": "High or Ultra", "notes": "Watch VRAM." },
+        { "name": "Streaming", "perf": "Low", "notes": "" },
+        { "name": "Shadows", "perf": "Low", "notes": "" },
+        { "name": "Shadow map resolution", "perf": "Low", "notes": "" },
+        { "name": "Post-process", "perf": "Low", "notes": "" },
+        { "name": "Volumetric fog", "perf": "Low", "notes": "" },
+        { "name": "Animation", "perf": "Low", "notes": "" }
+      ]
+    },
+    {
+      "name": "Upscaling",
+      "rows": [
+        { "name": "Upscale method", "perf": "DLSS / FSR / XeSS", "notes": "Match the GPU vendor." },
+        { "name": "Upscale quality", "perf": "Performance", "notes": "Quality if you have headroom." },
+        { "name": "DLSS frame gen", "perf": "On if the card allows it", "notes": "Adds latency on some setups." },
+        { "name": "NVIDIA Reflex", "perf": "On", "notes": "Enhanced if the machine stays cool." },
+        { "name": "XeSS frame gen", "perf": "Off unless Intel", "notes": "" },
+        { "name": "Xe low latency", "perf": "Off unless Intel", "notes": "" }
       ]
     }
   ]

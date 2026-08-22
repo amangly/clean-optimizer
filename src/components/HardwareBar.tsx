@@ -8,6 +8,7 @@ import type { HardwareInfo, LiveMetrics } from "@/lib/types";
 const chartConfig = {
   cpu: { label: "CPU", color: "var(--foreground)" },
   ram: { label: "RAM", color: "var(--muted-foreground)" },
+  gpu: { label: "GPU", color: "var(--foreground)" },
 } satisfies ChartConfig;
 
 type Props = {
@@ -23,7 +24,7 @@ function Spark({
 }: {
   label: string;
   value: number | null;
-  dataKey: "cpu" | "ram";
+  dataKey: "cpu" | "ram" | "gpu";
   data: UsageSample[];
 }) {
   return (
@@ -61,7 +62,7 @@ export function HardwareBar({ hardware, metrics }: Props) {
     if (!metrics) {
       return;
     }
-    setSamples((prev) => pushUsageSample(prev, metrics.cpuPct, metrics.ramPct));
+    setSamples((prev) => pushUsageSample(prev, metrics.cpuPct, metrics.ramPct, metrics.gpuPct));
   }, [metrics]);
 
   const title = [
@@ -74,6 +75,7 @@ export function HardwareBar({ hardware, metrics }: Props) {
   return (
     <div className="flex shrink-0 items-center gap-4" title={title}>
       <Spark label="CPU" value={metrics?.cpuPct ?? null} dataKey="cpu" data={samples} />
+      <Spark label="GPU" value={metrics?.gpuPct ?? null} dataKey="gpu" data={samples} />
       <Spark label="RAM" value={metrics?.ramPct ?? null} dataKey="ram" data={samples} />
     </div>
   );

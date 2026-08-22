@@ -8,9 +8,14 @@ import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TextLinks } from "@/components/text-links";
 
-export function FixPage() {
+type Props = {
+  gpuGuide: string[];
+};
+
+export function FixPage({ gpuGuide }: Props) {
   const [checks, setChecks] = useState<CheckResult[]>([]);
   const [cache, setCache] = useState<CacheReport | null>(null);
+  const [diag, setDiag] = useState("");
   const [error, setError] = useState("");
 
   async function run() {
@@ -39,7 +44,31 @@ export function FixPage() {
         <Button variant="destructive" onClick={() => void wipe()}>
           {copy.clearCache}
         </Button>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setError("");
+            void api
+              .diagnose()
+              .then(setDiag)
+              .catch((e: Error) => setError(e.message));
+          }}
+        >
+          {copy.diagnose}
+        </Button>
       </div>
+      {gpuGuide.length > 0 ? (
+        <Card size="sm">
+          <CardHeader>
+            <CardTitle>{copy.gpuPanel}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1 text-sm text-muted-foreground">
+            {gpuGuide.map((line) => (
+              <p key={line}>{line}</p>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
       {checks.map((c) => (
         <Card key={c.id} size="sm">
           <CardHeader>
@@ -55,6 +84,7 @@ export function FixPage() {
           Deleted {cache.deletedFiles} files ({formatBytes(cache.bytes)}). Skipped {cache.skipped}.
         </p>
       ) : null}
+      {diag ? <pre className="whitespace-pre-wrap text-xs text-muted-foreground">{diag}</pre> : null}
       {error ? <Alert>{error}</Alert> : null}
     </div>
   );

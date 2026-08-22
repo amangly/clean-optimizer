@@ -80,9 +80,13 @@ export const copy = {
     "Reference only. Change these in the game under Settings, Video. This app cannot write them.",
   logEmpty: "No run log yet.",
   telemetry: "Send anonymous item ids and hardware sketch",
-  updateNone: "No newer GitHub release.",
+  updateNone: "This build matches the latest GitHub release.",
   updateOpen: "Open release",
+  updateDownload: "Install latest",
+  updateReady: "A newer GitHub release is available.",
   version: "Version",
+  diagnose: "Dump live state",
+  sampleRound: "Sample 30s from live meters",
 } as const;
 
 export const banned = [

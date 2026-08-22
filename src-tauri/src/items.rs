@@ -768,11 +768,11 @@ pub fn op_matches(op: &Op, store: &dyn Store, hw: &HardwareInfo) -> crate::error
         Op::PowerUltimate => {
             let active = store.active_scheme()?;
             if let Some(id) = &active {
-                if id.eq_ignore_ascii_case(ULTIMATE_TEMPLATE) {
+                if crate::store::guid_eq(id, ULTIMATE_TEMPLATE) {
                     return Ok(true);
                 }
                 if let Some(tool) = store.tool_scheme()? {
-                    if id.eq_ignore_ascii_case(&tool) {
+                    if crate::store::guid_eq(id, &tool) {
                         return Ok(true);
                     }
                 }
@@ -786,7 +786,10 @@ pub fn op_matches(op: &Op, store: &dyn Store, hw: &HardwareInfo) -> crate::error
         },
         Op::MmAgent { feature, enabled } => Ok(store.mmagent(feature)? == Some(*enabled)),
         Op::HibernateOff => Ok(store.hibernate()? == Some(false)),
-        Op::Bcd { name, value } => Ok(store.bcd(name)?.as_deref() == Some(value.as_str())),
+        Op::Bcd { name, value } => Ok(store
+            .bcd(name)?
+            .as_deref()
+            .is_some_and(|got| got.eq_ignore_ascii_case(value))),
         Op::PowerLock => store.lock_task(),
         Op::KvStr { hive, path, name, key, value } => {
             let key_ref = RegKeyRef::new(*hive, path, name);
@@ -919,5 +922,17 @@ mod tests {
         let items = catalog(&hw, None, None);
         let gm = items.iter().find(|i| i.id == "game-mode").unwrap();
         assert!(!item_state(gm, &store, &hw).unwrap());
+    }
+
+    #[test]
+    fn bcd_match_ignores_case() {
+        let hw = HardwareInfo::fixture();
+        let store = MemoryStore::new();
+        store.set_bcd("disabledynamictick", "Yes").unwrap();
+        let op = Op::Bcd {
+            name: "disabledynamictick".into(),
+            value: "yes".into(),
+        };
+        assert!(op_matches(&op, &store, &hw).unwrap());
     }
 }

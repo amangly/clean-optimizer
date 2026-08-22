@@ -138,20 +138,33 @@ struct Outcome {
 
 fn apply_item(store: &dyn Store, hw: &HardwareInfo, item: &OptItem) -> Result<Outcome> {
     match item.kind {
-        crate::types::ItemKind::Check => Ok(Outcome {
-            changed: false,
-            skipped: true,
-            attention: false,
-            message: "Check only.".into(),
-            ops: vec![],
-        }),
-        crate::types::ItemKind::Cache => Ok(Outcome {
-            changed: true,
-            skipped: false,
-            attention: false,
-            message: "Shader cache delete is handled by the cache command.".into(),
-            ops: vec![],
-        }),
+        crate::types::ItemKind::Check => {
+            let check = crate::checks::run_all()
+                .into_iter()
+                .find(|c| c.id == item.id);
+            Ok(Outcome {
+                changed: false,
+                skipped: true,
+                attention: check.as_ref().map(|c| c.attention).unwrap_or(false),
+                message: check
+                    .map(|c| c.text)
+                    .unwrap_or_else(|| "Check only.".into()),
+                ops: vec![],
+            })
+        }
+        crate::types::ItemKind::Cache => {
+            let report = crate::cache::clean(&crate::cache::shader_dirs())?;
+            Ok(Outcome {
+                changed: report.deleted_files > 0,
+                skipped: report.deleted_files == 0,
+                attention: false,
+                message: format!(
+                    "Deleted {} files ({} bytes). Skipped {}.",
+                    report.deleted_files, report.bytes, report.skipped
+                ),
+                ops: vec![],
+            })
+        }
         _ => {
             if item_state(item, store, hw).unwrap_or(false) {
                 return Ok(Outcome {
@@ -208,6 +221,12 @@ fn apply_op(
         Op::PowerUltimate => {
             let original = store.active_scheme()?;
             let tool = store.ensure_tool_scheme()?;
+            if original
+                .as_ref()
+                .is_some_and(|got| crate::store::guid_eq(got, &tool))
+            {
+                return Ok(None);
+            }
             store.set_active_scheme(&tool)?;
             Ok(Some(BackupOp {
                 item_id: item.id.clone(),
@@ -264,7 +283,10 @@ fn apply_op(
         }
         Op::Bcd { name, value } => {
             let original = store.bcd(name)?;
-            if original.as_deref() == Some(value.as_str()) {
+            if original
+                .as_deref()
+                .is_some_and(|got| got.eq_ignore_ascii_case(value))
+            {
                 return Ok(None);
             }
             store.set_bcd(name, value)?;

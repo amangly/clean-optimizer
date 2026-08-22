@@ -4,10 +4,10 @@ import { USAGE_LIMIT, pushUsageSample } from "./usage-samples";
 describe("usage samples", () => {
   it("appends and treats missing load as zero", () => {
     const one = pushUsageSample([], null, 40);
-    expect(one).toEqual([{ i: 0, cpu: 0, ram: 40 }]);
-    expect(pushUsageSample(one, 12, 41)).toEqual([
-      { i: 0, cpu: 0, ram: 40 },
-      { i: 1, cpu: 12, ram: 41 },
+    expect(one).toEqual([{ i: 0, cpu: 0, ram: 40, gpu: 0 }]);
+    expect(pushUsageSample(one, 12, 41, 8)).toEqual([
+      { i: 0, cpu: 0, ram: 40, gpu: 0 },
+      { i: 1, cpu: 12, ram: 41, gpu: 8 },
     ]);
   });
 

@@ -8,8 +8,21 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 pub const ULTIMATE_TEMPLATE: &str = "e9a42b02-3cd1-4ed4-8e39-3f6b770b171b";
+pub const HIGH_PERFORMANCE: &str = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
 pub const BALANCED_SCHEME: &str = "381b4222-f694-41f0-9685-ff5bb260df2e";
 pub const TOOL_SCHEME_NAME: &str = "Clean Optimizer · Ultimate Performance";
+
+pub fn normalize_guid(raw: &str) -> String {
+    raw.trim().trim_matches('{').trim_matches('}').to_string()
+}
+
+pub fn brace_guid(raw: &str) -> String {
+    format!("{{{}}}", normalize_guid(raw))
+}
+
+pub fn guid_eq(a: &str, b: &str) -> bool {
+    normalize_guid(a).eq_ignore_ascii_case(&normalize_guid(b))
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct RegKeyRef {

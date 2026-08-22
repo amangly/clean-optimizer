@@ -80,8 +80,8 @@ export function readLog() {
   return invoke<string>("read_log");
 }
 
-export function startExperiment(sceneId: string) {
-  return invoke<ExperimentState>("start_experiment", { sceneId });
+export function startExperiment(sceneId: string, gamePath?: string | null) {
+  return invoke<ExperimentState>("start_experiment", { sceneId, gamePath: gamePath ?? null });
 }
 
 export function experimentStatus() {
@@ -102,6 +102,18 @@ export function cancelExperiment() {
 
 export function checkUpdate() {
   return invoke<UpdateInfo>("check_update");
+}
+
+export function appVersion() {
+  return invoke<string>("app_version");
+}
+
+export function downloadUpdate() {
+  return invoke<string>("download_update");
+}
+
+export function diagnose() {
+  return invoke<string>("diagnose");
 }
 
 export function relaunchElevated() {

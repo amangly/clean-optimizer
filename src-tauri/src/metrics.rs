@@ -2,15 +2,20 @@ use crate::error::Result;
 use crate::types::LiveMetrics;
 
 pub fn snapshot() -> Result<LiveMetrics> {
+    let gpu = gpu_nvidia();
     Ok(LiveMetrics {
         cpu_pct: cpu_pct(),
-        gpu_pct: None,
+        gpu_pct: gpu.as_ref().map(|g| g.util),
         ram_pct: ram_pct(),
         cpu_temp: None,
-        gpu_temp: None,
+        gpu_temp: gpu.as_ref().and_then(|g| g.temp),
         fps: None,
         fps_1pct: None,
-        note: "CPU and RAM come from Windows. GPU temp, power, and FPS need PresentMon or LibreHardwareMonitor in resources.".into(),
+        note: if gpu.is_some() {
+            "CPU, RAM, and NVIDIA GPU from Windows / nvidia-smi. FPS needs PresentMon.".into()
+        } else {
+            "CPU and RAM from Windows. GPU via nvidia-smi when it is installed.".into()
+        },
     })
 }
 
@@ -47,6 +52,47 @@ fn cpu_pct() -> Option<u32> {
     }
 }
 
+struct GpuSnap {
+    util: u32,
+    temp: Option<f64>,
+}
+
+fn gpu_nvidia() -> Option<GpuSnap> {
+    let smi = [
+        r"C:\Windows\System32\nvidia-smi.exe",
+        r"C:\Program Files\NVIDIA Corporation\NVSMI\nvidia-smi.exe",
+    ]
+    .into_iter()
+    .find(|p| std::path::Path::new(p).exists())?;
+    let out = hidden(&smi)
+        .args([
+            "--query-gpu=utilization.gpu,temperature.gpu",
+            "--format=csv,noheader,nounits",
+        ])
+        .output()
+        .ok()?;
+    parse_nvidia_smi(&String::from_utf8_lossy(&out.stdout))
+}
+
+fn parse_nvidia_smi(text: &str) -> Option<GpuSnap> {
+    let line = text.lines().map(str::trim).find(|l| !l.is_empty())?;
+    let mut parts = line.split(',').map(|s| s.trim());
+    let util = parts.next()?.parse::<u32>().ok()?;
+    let temp = parts.next().and_then(|s| s.parse::<f64>().ok());
+    Some(GpuSnap { util, temp })
+}
+
+fn hidden(bin: &str) -> std::process::Command {
+    #[cfg(windows)]
+    {
+        crate::win::hidden_command(bin)
+    }
+    #[cfg(not(windows))]
+    {
+        std::process::Command::new(bin)
+    }
+}
+
 #[cfg(windows)]
 struct Mem {
     memory_load: u32,
@@ -75,5 +121,17 @@ fn memory_status() -> Option<Mem> {
             memory_load: mem.dwMemoryLoad,
             total_phys: mem.ullTotalPhys,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_smi_line() {
+        let snap = parse_nvidia_smi("12, 54\n").unwrap();
+        assert_eq!(snap.util, 12);
+        assert_eq!(snap.temp, Some(54.0));
     }
 }

@@ -142,6 +142,7 @@ export type ExperimentState = {
   baselineRuns: number;
   kept: string[];
   rolledBack: string[];
+  gamePath: string | null;
 };
 
 export type UpdateInfo = {
@@ -149,6 +150,8 @@ export type UpdateInfo = {
   latest: string | null;
   notes: string;
   setupUrl: string | null;
+  assetUrl: string | null;
+  sha256: string | null;
   available: boolean;
 };
 

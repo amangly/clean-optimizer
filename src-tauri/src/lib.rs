@@ -92,6 +92,9 @@ pub fn run() {
             confirm_experiment_round,
             cancel_experiment,
             check_update,
+            app_version,
+            download_update,
+            diagnose,
             relaunch_elevated,
             is_elevated
         ])

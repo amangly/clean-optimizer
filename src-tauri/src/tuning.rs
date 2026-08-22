@@ -29,6 +29,8 @@ pub struct ExperimentState {
     pub baseline_runs: u32,
     pub kept: Vec<String>,
     pub rolled_back: Vec<String>,
+    #[serde(default)]
+    pub game_path: Option<String>,
 }
 
 pub fn library() -> Vec<Candidate> {
@@ -77,7 +79,7 @@ pub fn item_set_hash(ids: &[String]) -> String {
     sha256_hex(&clean.join(","))
 }
 
-pub fn start(root: &Path, scene_id: &str) -> Result<ExperimentState> {
+pub fn start(root: &Path, scene_id: &str, game_path: Option<String>) -> Result<ExperimentState> {
     let scene = scene_id.trim();
     if scene.len() < 2 || scene.len() > 80 {
         return Err(Error::Msg("scene id must be 2-80 characters".into()));
@@ -92,6 +94,7 @@ pub fn start(root: &Path, scene_id: &str) -> Result<ExperimentState> {
         baseline_runs: 0,
         kept: vec![],
         rolled_back: vec![],
+        game_path,
     };
     write_state(root, &state)?;
     Ok(state)
@@ -197,7 +200,7 @@ mod tests {
     #[test]
     fn experiment_reaches_complete() {
         let tmp = tempdir().unwrap();
-        start(tmp.path(), "farm-east").unwrap();
+        start(tmp.path(), "farm-east", None).unwrap();
         let mut state = None;
         for _ in 0..3 {
             state = Some(confirm_round(tmp.path(), 120.0, 80.0, 2).unwrap());

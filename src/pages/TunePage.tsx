@@ -8,7 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Alert } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function TunePage() {
+type Props = {
+  gamePath: string;
+};
+
+export function TunePage({ gamePath }: Props) {
   const [scene, setScene] = useState("same-map-same-route");
   const [state, setState] = useState<ExperimentState | null>(null);
   const [library, setLibrary] = useState<Candidate[]>([]);
@@ -25,7 +29,7 @@ export function TunePage() {
   async function start() {
     setError("");
     try {
-      setState(await api.startExperiment(scene));
+      setState(await api.startExperiment(scene, gamePath || null));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -72,6 +76,27 @@ export function TunePage() {
           <Label>Hitches</Label>
           <Input className="w-24" value={hitches} onChange={(e) => setHitches(e.target.value)} />
         </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            void (async () => {
+              const gpu: number[] = [];
+              for (let i = 0; i < 30; i += 1) {
+                const snap = await api.liveMetrics();
+                if (snap.gpuPct != null) {
+                  gpu.push(snap.gpuPct);
+                }
+                await new Promise((r) => window.setTimeout(r, 1000));
+              }
+              if (gpu.length > 0) {
+                const mean = gpu.reduce((a, b) => a + b, 0) / gpu.length;
+                setAvg(String(Math.round(mean)));
+              }
+            })();
+          }}
+        >
+          {copy.sampleRound}
+        </Button>
         <Button variant="outline" onClick={() => void confirm()}>
           {copy.tuneConfirm}
         </Button>

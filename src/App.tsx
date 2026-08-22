@@ -14,7 +14,7 @@ import { LogPage } from "@/pages/LogPage";
 import { OptimizePage } from "@/pages/OptimizePage";
 import { ReferencePage } from "@/pages/ReferencePage";
 import { TunePage } from "@/pages/TunePage";
-import type { DetectReport, ItemResult, LiveMetrics, Prefs, Preset, RestoreItem, TabId } from "@/lib/types";
+import type { DetectReport, ItemResult, LiveMetrics, Prefs, Preset, RestoreItem, TabId, UpdateInfo } from "@/lib/types";
 
 const HardwareBar = lazy(async () => {
   const mod = await import("@/components/HardwareBar");
@@ -35,6 +35,8 @@ export function App() {
   const [lastApply, setLastApply] = useState<ItemResult[] | null>(null);
   const [elevated, setElevated] = useState(true);
   const [settings, setSettings] = useState(false);
+  const [update, setUpdate] = useState<UpdateInfo | null>(null);
+  const [version, setVersion] = useState("");
 
   useEffect(() => {
     void api
@@ -47,6 +49,7 @@ export function App() {
       })
       .catch((e: Error) => setError(e.message));
     void api.isElevated().then(setElevated);
+    void api.appVersion().then(setVersion).catch(() => undefined);
   }, [setTheme]);
 
   useEffect(() => {
@@ -54,6 +57,7 @@ export function App() {
       return;
     }
     void refresh();
+    void api.checkUpdate().then(setUpdate).catch(() => undefined);
     void api.liveMetrics().then(setMetrics).catch(() => undefined);
     const id = window.setInterval(() => {
       void api.liveMetrics().then(setMetrics).catch(() => undefined);
@@ -157,7 +161,13 @@ export function App() {
           <Suspense fallback={null}>
             <HardwareBar hardware={report.hardware} metrics={metrics} />
           </Suspense>
-          <Button variant="ghost" onClick={() => setSettings(true)}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setSettings(true);
+              void api.checkUpdate().then(setUpdate).catch(() => undefined);
+            }}
+          >
             {copy.settings}
           </Button>
         </div>
@@ -191,8 +201,8 @@ export function App() {
             onDeletePreset={(id) => void api.deletePreset(id).then(() => api.listPresets().then(setPresets))}
           />
         ) : null}
-        {tab === "tune" ? <TunePage /> : null}
-        {tab === "fix" ? <FixPage /> : null}
+        {tab === "tune" ? <TunePage gamePath={gamePath} /> : null}
+        {tab === "fix" ? <FixPage gpuGuide={report.gpuGuide} /> : null}
         {tab === "reference" ? <ReferencePage /> : null}
         {tab === "log" ? <LogPage /> : null}
       </main>
@@ -201,6 +211,13 @@ export function App() {
           <DialogTitle>{copy.settings}</DialogTitle>
           <DialogDescription>{copy.unofficial}</DialogDescription>
           <p className="mt-2 text-sm text-muted-foreground">{copy.tagline}</p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            {copy.version} {update?.current ?? version}
+            {update?.latest ? ` · latest ${update.latest}` : ""}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {update?.available ? update.notes || copy.updateReady : copy.updateNone}
+          </p>
           <div className="mt-3 flex items-center gap-2">
             <Switch
               checked={prefs.telemetry}
@@ -209,6 +226,26 @@ export function App() {
             <Label className="text-xs font-normal">{copy.telemetry}</Label>
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
+            {update?.setupUrl ? (
+              <Button variant="outline" asChild>
+                <a href={update.setupUrl} target="_blank" rel="noreferrer">
+                  {copy.updateOpen}
+                </a>
+              </Button>
+            ) : null}
+            {update?.available ? (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  void api
+                    .downloadUpdate()
+                    .then(() => api.checkUpdate().then(setUpdate))
+                    .catch((e: Error) => setError(e.message));
+                }}
+              >
+                {copy.updateDownload}
+              </Button>
+            ) : null}
             <Button
               variant="outline"
               onClick={() => {

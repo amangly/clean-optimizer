@@ -129,11 +129,65 @@ fn xmp() -> CheckResult {
             text: "Could not read memory SPD.".into(),
         };
     }
+    let (rated, running) = mem_speeds(&raw);
+    let hw = crate::hardware::detect().ok();
+    let menu = xmp_menu(
+        hw.as_ref().map(|h| h.brand.as_str()).unwrap_or(""),
+        hw.as_ref().map(|h| h.cpu_name.as_str()).unwrap_or(""),
+    );
+    let attention = match (rated, running) {
+        (Some(r), Some(c)) if c + 50 < r => true,
+        _ => false,
+    };
+    let speeds = match (rated, running) {
+        (Some(r), Some(c)) => format!("running {c} MT/s, SMBIOS rated {r} MT/s"),
+        _ => format!("SPD snapshot: {raw}"),
+    };
     CheckResult {
         id: "xmp-check".into(),
         ok: true,
-        attention: false,
-        text: format!("Memory SPD snapshot: {raw}"),
+        attention,
+        text: if attention {
+            format!("{speeds}. BIOS menu on this board is usually {menu}.")
+        } else {
+            format!("{speeds}. At or near the rated speed. No BIOS hunt.")
+        },
+    }
+}
+
+fn mem_speeds(raw: &str) -> (Option<u64>, Option<u64>) {
+    let values: Vec<serde_json::Value> = if raw.trim().starts_with('[') {
+        serde_json::from_str(raw).unwrap_or_default()
+    } else {
+        serde_json::from_str::<serde_json::Value>(raw)
+            .ok()
+            .into_iter()
+            .collect()
+    };
+    let mut rated = None;
+    let mut running = None;
+    for v in values {
+        if let Some(s) = v.get("Speed").and_then(|x| x.as_u64()) {
+            rated = Some(rated.map_or(s, |old: u64| old.max(s)));
+        }
+        if let Some(s) = v.get("ConfiguredClockSpeed").and_then(|x| x.as_u64()) {
+            running = Some(running.map_or(s, |old: u64| old.max(s)));
+        }
+    }
+    (rated, running)
+}
+
+fn xmp_menu(brand: &str, cpu: &str) -> &'static str {
+    let amd = cpu.to_ascii_lowercase().contains("amd");
+    let b = brand.to_ascii_lowercase();
+    if amd && b.contains("msi") {
+        "A-XMP"
+    } else if amd && (b.contains("asus") || b.contains("asustek")) {
+        "DOCP or EXPO"
+    } else if amd {
+        "EXPO or DOCP"
+    } else {
+        "XMP"
     }
 }
 
