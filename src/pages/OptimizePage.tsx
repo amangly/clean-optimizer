@@ -270,7 +270,7 @@ export function OptimizePage({
         <DialogContent>
           <DialogTitle>{copy.restorePickTitle}</DialogTitle>
           <DialogDescription>{copy.restoreSelectiveNote}</DialogDescription>
-          <div className="mt-3 max-h-64 space-y-2 overflow-y-auto">
+          <div className="mt-3 grid max-h-52 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
             {restoreItems.map((item) => (
               <label key={item.id} className="flex items-start gap-2 text-sm">
                 <Checkbox

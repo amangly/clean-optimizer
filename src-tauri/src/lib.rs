@@ -52,6 +52,8 @@ fn external_navigation_plugin() -> tauri::plugin::TauriPlugin<tauri::Wry> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(windows)]
+    crate::win::kill_other_instances();
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(external_navigation_plugin())

@@ -28,14 +28,14 @@ function Spark({
   data: UsageSample[];
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5 overflow-hidden">
       <span className="shrink-0 whitespace-nowrap text-[11px] text-muted-foreground tabular-nums">
         {label} {value == null ? "n/a" : `${value}%`}
       </span>
       <ChartContainer
         config={chartConfig}
-        className="aspect-auto h-7 w-20 shrink-0 overflow-hidden"
-        initialDimension={{ width: 80, height: 28 }}
+        className="relative aspect-auto h-6 w-14 shrink-0 overflow-hidden"
+        initialDimension={{ width: 56, height: 24 }}
       >
         <AreaChart data={data} margin={{ top: 2, right: 0, bottom: 2, left: 0 }}>
           <YAxis hide domain={[0, 100]} />
@@ -73,7 +73,7 @@ export function HardwareBar({ hardware, metrics }: Props) {
   ].join(" · ");
 
   return (
-    <div className="flex shrink-0 items-center gap-4" title={title}>
+    <div className="flex h-7 shrink-0 items-center gap-2 overflow-hidden" title={title}>
       <Spark label="CPU" value={metrics?.cpuPct ?? null} dataKey="cpu" data={samples} />
       <Spark label="GPU" value={metrics?.gpuPct ?? null} dataKey="gpu" data={samples} />
       <Spark label="RAM" value={metrics?.ramPct ?? null} dataKey="ram" data={samples} />

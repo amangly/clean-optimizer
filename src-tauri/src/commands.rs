@@ -101,20 +101,32 @@ pub fn apply_items(args: ApplyArgs) -> Result<ApplyReport> {
     } else {
         None
     };
+    let game = args.game_path.clone().unwrap_or_else(|| "-".into());
+    let risky = args.risky;
+    let elevated = admin();
     let req = ApplyRequest {
         items: args.items,
         preset: args.preset,
         game_path: args.game_path,
         gpu_spoof_model: args.gpu_spoof_model,
-        risky: args.risky,
-        admin: admin(),
+        risky,
+        admin: elevated,
     };
     let report = apply::apply(store().as_ref(), &backups, &hw, req, preset_items)?;
-    log::append(
+    log::append_run(
         &paths.user,
+        "apply",
         &format!(
-            "apply ok={} fail={} skip={}",
-            report.succeeded, report.failed, report.skipped
+            "apply start n={} risky={} admin={} game={}",
+            report.results.len(),
+            risky,
+            elevated,
+            game
+        ),
+        &report.results,
+        &format!(
+            "apply done ok={} fail={} skip={} attention={}",
+            report.succeeded, report.failed, report.skipped, report.attention
         ),
     )?;
     Ok(report)
@@ -125,10 +137,13 @@ pub fn restore_items(items: Option<Vec<String>>) -> Result<RestoreReport> {
     let paths = paths()?;
     let backups = BackupStore::open(&paths.root)?;
     let report = restore::restore(store().as_ref(), &backups, items)?;
-    log::append(
+    log::append_run(
         &paths.user,
+        "restore",
+        &format!("restore start n={}", report.results.len()),
+        &report.results,
         &format!(
-            "restore restored={} fail={} skip={}",
+            "restore done restored={} fail={} skip={}",
             report.restored, report.failed, report.skipped
         ),
     )?;

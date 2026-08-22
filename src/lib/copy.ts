@@ -79,6 +79,8 @@ export const copy = {
   refLead:
     "Reference only. Change these in the game under Settings, Video. This app cannot write them.",
   logEmpty: "No run log yet.",
+  copyLog: "Copy",
+  logCopied: "Copied",
   telemetry: "Send anonymous item ids and hardware sketch",
   updateNone: "This build matches the latest GitHub release.",
   updateOpen: "Open release",

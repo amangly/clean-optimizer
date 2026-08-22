@@ -149,15 +149,15 @@ export function App() {
 
   return (
     <div className="flex h-dvh min-h-0 flex-col overflow-hidden">
-      <header className="flex h-11 shrink-0 items-center gap-3 border-b px-3">
-        <nav className="flex min-w-0 flex-1 gap-0.5">
+      <header className="grid h-11 shrink-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 overflow-hidden border-b px-3">
+        <nav className="relative z-10 flex min-w-0 items-center gap-0.5 overflow-x-auto bg-background">
           {(Object.keys(copy.tabs) as TabId[]).map((id) => (
             <Button key={id} variant={tab === id ? "default" : "ghost"} onClick={() => setTab(id)}>
               {copy.tabs[id]}
             </Button>
           ))}
         </nav>
-        <div className="flex shrink-0 items-center gap-3 border-l pl-3">
+        <div className="relative z-0 flex shrink-0 items-center gap-2 overflow-hidden border-l pl-3">
           <Suspense fallback={null}>
             <HardwareBar hardware={report.hardware} metrics={metrics} />
           </Suspense>
@@ -208,62 +208,66 @@ export function App() {
       </main>
       <Dialog open={settings} onOpenChange={setSettings}>
         <DialogContent>
-          <DialogTitle>{copy.settings}</DialogTitle>
-          <DialogDescription>{copy.unofficial}</DialogDescription>
-          <p className="mt-2 text-sm text-muted-foreground">{copy.tagline}</p>
-          <p className="mt-2 text-xs text-muted-foreground">
-            {copy.version} {update?.current ?? version}
-            {update?.latest ? ` · latest ${update.latest}` : ""}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {update?.available ? update.notes || copy.updateReady : copy.updateNone}
-          </p>
-          <div className="mt-3 flex items-center gap-2">
-            <Switch
-              checked={prefs.telemetry}
-              onCheckedChange={(on) => void persist({ ...prefs, telemetry: on })}
-            />
-            <Label className="text-xs font-normal">{copy.telemetry}</Label>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {update?.setupUrl ? (
-              <Button variant="outline" asChild>
-                <a href={update.setupUrl} target="_blank" rel="noreferrer">
-                  {copy.updateOpen}
-                </a>
-              </Button>
-            ) : null}
-            {update?.available ? (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  void api
-                    .downloadUpdate()
-                    .then(() => api.checkUpdate().then(setUpdate))
-                    .catch((e: Error) => setError(e.message));
-                }}
-              >
-                {copy.updateDownload}
-              </Button>
-            ) : null}
-            <Button
-              variant="outline"
-              onClick={() => {
-                const next = theme === "dark" ? "light" : "dark";
-                setTheme(next);
-                void persist({ ...prefs, theme: next });
-              }}
-            >
-              {theme === "dark" ? copy.themeLight : copy.themeDark}
-            </Button>
-            <Button variant="ghost" onClick={() => setSettings(false)}>
-              {copy.quit}
-            </Button>
-          </div>
-          <div className="ui-selectable mt-3 max-h-48 space-y-2 overflow-y-auto text-xs text-muted-foreground">
-            {copy.disclaimerBody.map((p) => (
-              <p key={p}>{p}</p>
-            ))}
+          <div className="grid gap-4 sm:grid-cols-2 sm:items-start">
+            <div>
+              <DialogTitle>{copy.settings}</DialogTitle>
+              <DialogDescription className="mt-1">{copy.unofficial}</DialogDescription>
+              <p className="mt-2 text-sm text-muted-foreground">{copy.tagline}</p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {copy.version} {update?.current ?? version}
+                {update?.latest ? ` · latest ${update.latest}` : ""}
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {update?.available ? update.notes || copy.updateReady : copy.updateNone}
+              </p>
+              <div className="mt-3 flex items-center gap-2">
+                <Switch
+                  checked={prefs.telemetry}
+                  onCheckedChange={(on) => void persist({ ...prefs, telemetry: on })}
+                />
+                <Label className="text-xs font-normal">{copy.telemetry}</Label>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {update?.setupUrl ? (
+                  <Button variant="outline" asChild>
+                    <a href={update.setupUrl} target="_blank" rel="noreferrer">
+                      {copy.updateOpen}
+                    </a>
+                  </Button>
+                ) : null}
+                {update?.available ? (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      void api
+                        .downloadUpdate()
+                        .then(() => api.checkUpdate().then(setUpdate))
+                        .catch((e: Error) => setError(e.message));
+                    }}
+                  >
+                    {copy.updateDownload}
+                  </Button>
+                ) : null}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    const next = theme === "dark" ? "light" : "dark";
+                    setTheme(next);
+                    void persist({ ...prefs, theme: next });
+                  }}
+                >
+                  {theme === "dark" ? copy.themeLight : copy.themeDark}
+                </Button>
+                <Button variant="ghost" onClick={() => setSettings(false)}>
+                  {copy.quit}
+                </Button>
+              </div>
+            </div>
+            <div className="ui-selectable max-h-52 space-y-2 overflow-y-auto border p-3 text-xs text-muted-foreground">
+              {copy.disclaimerBody.map((p) => (
+                <p key={p}>{p}</p>
+              ))}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -137,6 +137,19 @@ pub fn platform_roots() -> Vec<PathBuf> {
     roots
 }
 
+pub fn kill_other_instances() {
+    let me = std::process::id();
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+    let Some(name) = exe.file_name().and_then(|n| n.to_str()) else {
+        return;
+    };
+    let _ = hidden_command("taskkill")
+        .args(["/F", "/IM", name, "/FI", &format!("PID ne {me}")])
+        .status();
+}
+
 pub fn relaunch_elevated() -> Result<()> {
     let exe = std::env::current_exe()?;
     let status = Command::new("powershell")
@@ -151,10 +164,9 @@ pub fn relaunch_elevated() -> Result<()> {
         .creation_flags(CREATE_NO_WINDOW)
         .status()?;
     if status.success() {
-        Ok(())
-    } else {
-        Err(Error::Msg("elevation request was declined".into()))
+        std::process::exit(0);
     }
+    Err(Error::Msg("elevation request was declined".into()))
 }
 
 fn looks_like_game(name: &str) -> bool {
