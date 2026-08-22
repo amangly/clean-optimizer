@@ -1,6 +1,6 @@
 [package]
 name = "clean-optimizer"
-version = "0.1.4"
+version = "0.1.5"
 description = "Windows frame-rate optimizer for Delta Force"
 authors = ["amangly <amaralkaff@gmail.com>"]
 edition = "2021"

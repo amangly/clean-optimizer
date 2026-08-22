@@ -49,7 +49,7 @@ export function App() {
   const [updating, setUpdating] = useState(false);
   const [version, setVersion] = useState("");
   const [reboot, setReboot] = useState<RebootState | null>(null);
-  const [rebootAsk, setRebootAsk] = useState(false);
+  const [rebooting, setRebooting] = useState(false);
 
   useEffect(() => {
     void api
@@ -110,6 +110,13 @@ export function App() {
     try {
       const next = await api.rebootState();
       setReboot(next);
+      if (next.needsReboot) {
+        setRebooting(true);
+        void api.requestReboot().catch((e: Error) => {
+          setRebooting(false);
+          setError(e.message);
+        });
+      }
     } catch {
       return;
     }
@@ -140,7 +147,7 @@ export function App() {
       await refresh(gamePath);
       await loadReboot();
       if (reportApply.results.some((row) => row.reboot)) {
-        setRebootAsk(true);
+        setRebooting(true);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -232,10 +239,21 @@ export function App() {
       {updating ? (
         <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{copy.updateInstalling}</Alert>
       ) : null}
-      {reboot?.needsReboot && !rebootAsk ? (
+      {rebooting ? (
+        <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">{copy.rebootAuto}</Alert>
+      ) : reboot?.needsReboot ? (
         <Alert className="mx-3 mt-2 shrink-0 py-1.5 text-xs">
           {copy.rebootPending}{" "}
-          <Button className="ml-1" onClick={() => setRebootAsk(true)}>
+          <Button
+            className="ml-1"
+            onClick={() => {
+              setRebooting(true);
+              void api.requestReboot().catch((e: Error) => {
+                setRebooting(false);
+                setError(e.message);
+              });
+            }}
+          >
             {copy.rebootNow}
           </Button>
         </Alert>
@@ -266,31 +284,6 @@ export function App() {
         {tab === "reference" ? <ReferencePage /> : null}
         {tab === "log" ? <LogPage /> : null}
       </main>
-      <Dialog open={rebootAsk} onOpenChange={setRebootAsk}>
-        <DialogContent>
-          <DialogTitle>{copy.rebootTitle}</DialogTitle>
-          <DialogDescription>{copy.rebootBody}</DialogDescription>
-          <div className="mt-2 grid max-h-40 grid-cols-1 gap-1 overflow-y-auto text-xs sm:grid-cols-2">
-            {(reboot?.items.length ? reboot.items : lastApply?.filter((row) => row.reboot) ?? []).map(
-              (row) => (
-                <p key={row.id}>{row.name}</p>
-              ),
-            )}
-          </div>
-          <div className="mt-3 flex gap-2">
-            <Button
-              onClick={() => {
-                void api.requestReboot().catch((e: Error) => setError(e.message));
-              }}
-            >
-              {copy.rebootNow}
-            </Button>
-            <Button variant="outline" onClick={() => setRebootAsk(false)}>
-              {copy.rebootLater}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
       <Dialog
         open={Boolean(reboot?.review?.length)}
         onOpenChange={(open) => {

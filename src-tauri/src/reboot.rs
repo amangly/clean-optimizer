@@ -159,11 +159,21 @@ fn state_at(
     })
 }
 
+fn is_dev_build() -> bool {
+    std::env::current_exe()
+        .ok()
+        .and_then(|p| p.to_str().map(|s| s.to_ascii_lowercase()))
+        .is_some_and(|s| s.contains(r"\target\debug\"))
+}
+
 pub fn request() -> Result<()> {
+    if is_dev_build() {
+        return Ok(());
+    }
     #[cfg(windows)]
     {
         let status = crate::win::hidden_command("shutdown")
-            .args(["/r", "/t", "0"])
+            .args(["/r", "/t", "5", "/c", "Clean Optimizer"])
             .status()?;
         if status.success() {
             Ok(())

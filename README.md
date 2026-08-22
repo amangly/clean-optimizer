@@ -9,6 +9,10 @@
   <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
 </p>
 
+<p align="center">
+  <img src="src/assets/screenshot.png" alt="Clean Optimizer" />
+</p>
+
 Windows settings for the Chinese Delta Force client (三角洲行动). Writes are backed up. The game install is not touched.
 
 Looks for `DeltaForceClient-Win64-Shipping.exe`, `DeltaForceClient.exe`, or `DeltaForce.exe`.

@@ -23,6 +23,33 @@ pub fn hidden_command(bin: &str) -> Command {
     command
 }
 
+fn powercfg_exe() -> PathBuf {
+    let root = std::env::var("SYSTEMROOT").unwrap_or_else(|_| r"C:\Windows".into());
+    PathBuf::from(root).join("System32").join("powercfg.exe")
+}
+
+fn pcfg_output(args: &[&str]) -> Result<String> {
+    let out = Command::new(powercfg_exe())
+        .args(args)
+        .creation_flags(CREATE_NO_WINDOW)
+        .output()?;
+    let stdout = String::from_utf8_lossy(&out.stdout).to_string();
+    if out.status.success() {
+        return Ok(stdout);
+    }
+    let err = String::from_utf8_lossy(&out.stderr).trim().to_string();
+    let msg = if err.is_empty() {
+        stdout.trim().to_string()
+    } else {
+        err
+    };
+    if msg.is_empty() {
+        Err(Error::Msg(format!("powercfg failed with {}", out.status)))
+    } else {
+        Err(Error::Msg(format!("powercfg failed: {msg}")))
+    }
+}
+
 pub fn is_admin() -> bool {
     unsafe {
         let mut token: HANDLE = std::ptr::null_mut();
@@ -270,16 +297,16 @@ impl Store for WindowsStore {
     }
 
     fn active_scheme(&self) -> Result<Option<String>> {
-        let text = run_capture("powercfg", &["/getactivescheme"])?;
+        let text = pcfg_output(&["/getactivescheme"])?;
         Ok(extract_guid(&text))
     }
 
     fn set_active_scheme(&self, guid: &str) -> Result<()> {
-        run_ok("powercfg", &["/setactive", &brace_guid(guid)])
+        pcfg_output(&["/setactive", &normalize_guid(guid)]).map(|_| ())
     }
 
     fn tool_scheme(&self) -> Result<Option<String>> {
-        let text = run_capture("powercfg", &["/l"])?;
+        let text = pcfg_output(&["/l"])?;
         for line in text.lines() {
             if line.contains(TOOL_SCHEME_NAME) {
                 if let Some(id) = extract_guid(line) {
@@ -301,12 +328,16 @@ impl Store for WindowsStore {
             persist_scheme(&id);
             return Ok(id);
         }
-        let list = run_capture("powercfg", &["/l"])?;
+        let list = pcfg_output(&["/l"])?;
         for source in duplicate_candidates(&list) {
-            match run_capture("powercfg", &["/duplicatescheme", &normalize_guid(&source)]) {
+            match pcfg_output(&["/duplicatescheme", &normalize_guid(&source)]) {
                 Ok(text) => {
                     if let Some(guid) = extract_guid(&text) {
-                        let _ = run_ok("powercfg", &["/changename", &guid, TOOL_SCHEME_NAME]);
+                        let _ = pcfg_output(&[
+                            "/changename",
+                            &normalize_guid(&guid),
+                            TOOL_SCHEME_NAME,
+                        ]);
                         persist_scheme(&guid);
                         return Ok(guid);
                     }
@@ -328,7 +359,15 @@ impl Store for WindowsStore {
         if scheme.is_empty() {
             return Ok(None);
         }
-        let text = run_capture("powercfg", &["/q", &scheme, sub, setting])?;
+        let text = match pcfg_output(&[
+            "/q",
+            &normalize_guid(&scheme),
+            &normalize_guid(sub),
+            &normalize_guid(setting),
+        ]) {
+            Ok(text) => text,
+            Err(_) => return Ok(None),
+        };
         for line in text.lines() {
             if line.contains("Current AC Power Setting Index") {
                 if let Some(hex) = line.split(':').last() {
@@ -347,11 +386,17 @@ impl Store for WindowsStore {
         if scheme.is_empty() {
             return Err(Error::Msg("no active power scheme".into()));
         }
-        let _ = run_ok("powercfg", &["-attributes", sub, setting, "-ATTRIB_HIDE"]);
-        run_ok(
-            "powercfg",
-            &["/setacvalueindex", &scheme, sub, setting, &value.to_string()],
-        )?;
+        let scheme = normalize_guid(&scheme);
+        let sub = normalize_guid(sub);
+        let setting = normalize_guid(setting);
+        let _ = pcfg_output(&["-attributes", &sub, &setting, "-ATTRIB_HIDE"]);
+        pcfg_output(&[
+            "/setacvalueindex",
+            &scheme,
+            &sub,
+            &setting,
+            &value.to_string(),
+        ])?;
         self.set_active_scheme(&scheme)
     }
 
@@ -393,7 +438,7 @@ impl Store for WindowsStore {
     }
 
     fn set_hibernate(&self, on: bool) -> Result<()> {
-        run_ok("powercfg", &["-h", if on { "on" } else { "off" }])
+        pcfg_output(&["-h", if on { "on" } else { "off" }]).map(|_| ())
     }
 
     fn bcd(&self, name: &str) -> Result<Option<String>> {
@@ -446,7 +491,7 @@ fn lock_script_path() -> Result<PathBuf> {
 pub(crate) fn lock_script_text(guid: &str) -> String {
     format!(
         "Set sh = CreateObject(\"WScript.Shell\")\r\nsh.Run \"powercfg.exe /setactive {}\", 0, False\r\n",
-        brace_guid(guid)
+        normalize_guid(guid)
     )
 }
 
@@ -518,11 +563,15 @@ pub(crate) fn duplicate_candidates(list_text: &str) -> Vec<String> {
             out.push(guid);
         }
     };
-    push(ULTIMATE_TEMPLATE);
+    if scheme_listed(list_text, ULTIMATE_TEMPLATE) {
+        push(ULTIMATE_TEMPLATE);
+    }
     if let Some(found) = find_named_scheme(list_text, &["Ultimate Performance", "卓越性能"]) {
         push(&found);
     }
-    push(HIGH_PERFORMANCE);
+    if scheme_listed(list_text, HIGH_PERFORMANCE) {
+        push(HIGH_PERFORMANCE);
+    }
     out
 }
 
@@ -592,16 +641,17 @@ mod tests {
 Existing Power Schemes (* Active)
 Power Scheme GUID: 0d8ec965-6eba-492e-ac73-cffba22c7c4c  (Ultimate Performance)
 Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)
+Power Scheme GUID: 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c  (High performance)
 ";
         let cands = duplicate_candidates(list);
-        assert!(cands.iter().any(|g| guid_eq(g, ULTIMATE_TEMPLATE)));
         assert!(cands.iter().any(|g| guid_eq(g, "0d8ec965-6eba-492e-ac73-cffba22c7c4c")));
         assert!(cands.iter().any(|g| guid_eq(g, HIGH_PERFORMANCE)));
+        assert!(!cands.iter().any(|g| guid_eq(g, ULTIMATE_TEMPLATE)));
     }
 
     #[test]
     fn live_active_scheme_is_some() {
-        let text = run_capture("powercfg", &["/getactivescheme"]).unwrap();
+        let text = pcfg_output(&["/getactivescheme"]).unwrap();
         assert!(
             extract_guid(&text).is_some(),
             "active scheme text had no GUID: {text}"
@@ -611,7 +661,7 @@ Power Scheme GUID: 381b4222-f694-41f0-9685-ff5bb260df2e  (Balanced)
     #[test]
     fn lock_script_runs_powercfg_hidden() {
         let text = lock_script_text("7b815e17-f3fd-4f2b-a0f9-52b2dd2c1484");
-        assert!(text.contains("powercfg.exe /setactive {7b815e17-f3fd-4f2b-a0f9-52b2dd2c1484}"));
+        assert!(text.contains("powercfg.exe /setactive 7b815e17-f3fd-4f2b-a0f9-52b2dd2c1484"));
         assert!(text.contains(", 0, False"));
     }
 }

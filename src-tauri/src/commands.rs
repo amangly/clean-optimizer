@@ -141,6 +141,15 @@ pub fn apply_items(args: ApplyArgs) -> Result<ApplyReport> {
         })
         .collect();
     reboot::add_pending(&paths.user, &pending)?;
+    if !pending.is_empty() {
+        log::append(
+            &paths.user,
+            &format!("reboot scheduled n={}", pending.len()),
+        )?;
+        if let Err(e) = reboot::request() {
+            log::append(&paths.user, &format!("reboot fail {e}"))?;
+        }
+    }
     Ok(report)
 }
 
