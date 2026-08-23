@@ -20,7 +20,7 @@ pub fn builtin() -> Vec<Preset> {
             builtin: true,
             items: vec![
                 "power-ultimate","power-tuning","powerplan-lock",
-                "prio-separation","game-priority","sys-responsiveness","mmcss-games","net-throttling-off","game-mode",
+                "prio-separation","game-priority","sys-responsiveness","net-throttling-off","game-mode",
                 "gpu-irq-affinity",
                 "dvr-off","wer-off","sysmain-off","wsearch-off","hibernate-off",
                 "paging-exec","transparency-off","mpo-off","dyntick-off","mouse-accel-off",
@@ -31,12 +31,12 @@ pub fn builtin() -> Vec<Preset> {
         Preset {
             id: "balanced".into(),
             name: "Balanced".into(),
-            note: "The 20 items with a clear gain and a small side effect. Leaves desktop look, mouse feel, services, and hibernate alone.".into(),
+            note: "Items with a clear gain and a small side effect. Leaves desktop look, mouse feel, services, and hibernate alone.".into(),
             builtin: true,
             items: vec![
                 "power-ultimate","power-tuning","hags","game-mode","dvr-off","prio-separation",
                 "paging-exec","wer-off","transparency-off","mpo-off","net-throttling-off",
-                "sys-responsiveness","mmcss-games","fso-off","gpu-pref","game-priority",
+                "sys-responsiveness","fso-off","gpu-pref","game-priority",
                 "pcie-check","vcredist-check","xmp-check",
             ].into_iter().map(str::to_string).collect(),
         },
@@ -131,6 +131,17 @@ mod tests {
         assert_eq!(builtin()[0].id, "main");
         assert!(builtin()[0].items.contains(&"gpu-name-spoof".into()));
         assert!(!builtin()[1].items.contains(&"gpu-name-spoof".into()));
+    }
+
+    #[test]
+    fn presets_omit_mmcss_games() {
+        for preset in builtin() {
+            assert!(
+                !preset.items.iter().any(|id| id == "mmcss-games"),
+                "{} still lists mmcss-games",
+                preset.id
+            );
+        }
     }
 
     #[test]

@@ -343,12 +343,12 @@ pub fn catalog(hw: &HardwareInfo, game_path: Option<&str>, spoof: Option<&str>) 
     items.push(OptItem::base(
         "prio-separation",
         "Raise foreground scheduling weight",
-        "Sets Win32PrioritySeparation to 40: short, fixed quanta with more time for the foreground process.",
+        "Sets Win32PrioritySeparation to 38 (0x26): short, variable quanta with a 3:1 foreground boost.",
         ItemKind::Multi,
         true,
         true,
         false,
-        vec![reg(Hive::Hklm, r"SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", dword(40))],
+        vec![reg(Hive::Hklm, r"SYSTEM\CurrentControlSet\Control\PriorityControl", "Win32PrioritySeparation", dword(0x26))],
     ));
 
     items.push(OptItem::base(
@@ -535,10 +535,10 @@ pub fn catalog(hw: &HardwareInfo, game_path: Option<&str>, spoof: Option<&str>) 
     items.push(OptItem::base(
         "mmcss-games",
         "Raise the MMCSS Games task",
-        "Sets GPU priority 8, task priority 6, scheduling and SFIO High. Small gain, full restore.",
+        "Writes Tasks\\Games priorities. Only used if a process registers with MMCSS as Games. Most games never do. Off by default.",
         ItemKind::Multi,
         true,
-        true,
+        false,
         false,
         vec![
             reg(Hive::Hklm, mm_tasks, "GPU Priority", dword(8)),
@@ -847,6 +847,37 @@ pub fn gpu_guide(hw: &HardwareInfo) -> Vec<String> {
 mod tests {
     use super::*;
     use crate::store::MemoryStore;
+
+    #[test]
+    fn prio_separation_is_short_variable_3to1() {
+        let hw = HardwareInfo::fixture();
+        let items = catalog(&hw, None, None);
+        let item = items.iter().find(|i| i.id == "prio-separation").unwrap();
+        let got = item.ops.iter().find_map(|op| match op {
+            Op::Reg { name, value, .. } if name == "Win32PrioritySeparation" => Some(value.clone()),
+            _ => None,
+        });
+        assert_eq!(got, Some(RegVal::Dword { value: 0x26 }));
+    }
+
+    #[test]
+    fn prio_separation_note_matches_value() {
+        let hw = HardwareInfo::fixture();
+        let items = catalog(&hw, None, None);
+        let item = items.iter().find(|i| i.id == "prio-separation").unwrap();
+        assert!(item.note.contains("0x26"), "{}", item.note);
+        assert!(!item.note.contains("40"), "{}", item.note);
+        assert!(!item.note.to_ascii_lowercase().contains("fixed"), "{}", item.note);
+    }
+
+    #[test]
+    fn mmcss_games_is_opt_in() {
+        let hw = HardwareInfo::fixture();
+        let items = catalog(&hw, None, None);
+        let item = items.iter().find(|i| i.id == "mmcss-games").unwrap();
+        assert!(!item.default);
+        assert!(!item.ops.is_empty());
+    }
 
     #[test]
     fn catalog_contains_core_ids() {

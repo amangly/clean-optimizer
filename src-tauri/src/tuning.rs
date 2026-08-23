@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 use std::fs;
 use std::path::Path;
 
-pub const LIBRARY_VERSION: u32 = 1;
+pub const LIBRARY_VERSION: u32 = 2;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "camelCase")]
@@ -50,16 +50,14 @@ pub fn library() -> Vec<Candidate> {
             item_ids: vec![
                 "prio-separation".into(),
                 "game-priority".into(),
-                "mmcss-games".into(),
                 "net-throttling-off".into(),
             ],
             item_set_hash: item_set_hash(&[
                 "prio-separation".into(),
                 "game-priority".into(),
-                "mmcss-games".into(),
                 "net-throttling-off".into(),
             ]),
-            purpose: "Raise CPU, IO, and multimedia priority. Watch smoothness.".into(),
+            purpose: "Raise CPU and IO priority and remove the multimedia network cap. Watch smoothness.".into(),
         },
         Candidate {
             group_id: "G3".into(),
@@ -187,6 +185,13 @@ mod tests {
         let ids: Vec<_> = library().into_iter().flat_map(|c| c.item_ids).collect();
         assert!(!ids.iter().any(|i| i == "gpu-name-spoof"));
         assert_eq!(library().len(), 3);
+    }
+
+    #[test]
+    fn library_omits_mmcss_games() {
+        let ids: Vec<_> = library().into_iter().flat_map(|c| c.item_ids).collect();
+        assert!(!ids.iter().any(|i| i == "mmcss-games"));
+        assert_eq!(LIBRARY_VERSION, 2);
     }
 
     #[test]
